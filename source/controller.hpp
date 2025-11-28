@@ -15,21 +15,11 @@ public:
     [[nodiscard]] auto getIntegral() const -> double { return m_integral; }
     [[nodiscard]] auto getDerivative() const -> double { return m_derivative; }
 
+    /// Set radial range [-range/2,range/2]
     void setRange(double range);
     void setRateLimit(double limit);
 
-    /// @brief Compute PID output for linear error (units depend on context)
-    /// @param target Target value (units match error context: m, m/s, etc.)
-    /// @param measured Current measured value (same units as target)
-    /// @param dt Time step in seconds
-    /// @return Control output (units depend on context)
     auto compute(double target, double measured, double dt) -> double;
-
-    /// @brief Compute PID output for angular error (handles angle wrapping)
-    /// @param target Target angle in radians
-    /// @param measured Current angle in radians
-    /// @param dt Time step in seconds
-    /// @return Control output in rad/s
     auto computeInRange(double target, double measured, double dt) -> double;
 
 protected:
