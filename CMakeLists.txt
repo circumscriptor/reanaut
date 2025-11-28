@@ -13,6 +13,10 @@ target_sources(imgui-docking PRIVATE ${imgui_sources})
 target_include_directories(imgui-docking SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui-docking")
 target_link_libraries(imgui-docking PRIVATE SDL3::SDL3)
 
+# Kalman
+add_library(kalman INTERFACE)
+target_include_directories(kalman SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/kalman/include")
+
 #
 # Main target
 #
@@ -27,9 +31,10 @@ target_sources(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Boost::headers
     Eigen3::Eigen
-    SDL3::SDL3
     imgui-docking
+    kalman
     opencv_highgui
+    SDL3::SDL3
     # c++ c++abi
 )
 
