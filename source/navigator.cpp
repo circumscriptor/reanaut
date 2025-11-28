@@ -14,19 +14,26 @@ namespace reanaut
 
 auto Velocity::computeControl() const -> std::pair<uint16_t, uint16_t>
 {
-    if (isZero(linear) and not isZero(angular)) {
+    const bool hasLinear  = not isZero(linear);
+    const bool hasAngular = not isZero(angular);
+
+    if (not hasLinear and hasAngular) {
         const auto speed = angular * kWheelbaseDistance * 1000.0 * 0.5;
         return {static_cast<uint32_t>(speed) & kMaskU16, 1};
     }
 
-    if (not isZero(linear) and not isZero(angular)) {
+    if (hasLinear and not hasAngular) {
         const auto speed = linear * 1000.0;
         return {static_cast<uint32_t>(speed) & kMaskU16, 0};
     }
 
-    const auto radius = linear * 1000.0 / angular;
-    const auto speed  = linear * 1000.0 * ((radius + std::copysign(kWheelbaseDistance * 1000.0, radius)) * 0.5) / radius;
-    return {static_cast<uint32_t>(speed) & kMaskU16, static_cast<uint32_t>(radius) & kMaskU16};
+    if (hasLinear and hasAngular) {
+        const auto radius = linear * 1000.0 / angular;
+        const auto speed  = linear * 1000.0 * ((radius + std::copysign(kWheelbaseDistance * 1000.0, radius)) * 0.5) / radius;
+        return {static_cast<uint32_t>(speed) & kMaskU16, static_cast<uint32_t>(radius) & kMaskU16};
+    }
+
+    return {0, 0};
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
