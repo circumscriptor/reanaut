@@ -7,10 +7,12 @@
 namespace reanaut
 {
 
-Controller::Controller(double kP, double kI, double kD)
-    : m_integralMin(std::numeric_limits<double>::min()), //
-      m_integralMax(std::numeric_limits<double>::max()), //
-      m_rateLimit(std::numeric_limits<double>::max()),   //
+Controller::Controller(const Gains& gains) : Controller(gains.kP, gains.kI, gains.kD) {}
+
+Controller::Controller(Real kP, Real kI, Real kD)
+    : m_integralMin(std::numeric_limits<Real>::min()), //
+      m_integralMax(std::numeric_limits<Real>::max()), //
+      m_rateLimit(std::numeric_limits<Real>::max()),   //
       m_kP(kP), m_kI(kI), m_kD(kD)
 {
 }
@@ -23,42 +25,42 @@ void Controller::reset()
     m_derivative = 0.0;
 }
 
-void Controller::setRange(double range) { m_errorRange = range; }
+void Controller::setRange(Real range) { m_errorRange = range; }
 
-void Controller::setRateLimit(double limit) { m_rateLimit = limit; }
+void Controller::setRateLimit(Real limit) { m_rateLimit = limit; }
 
-auto Controller::compute(double target, double measured, double dt) -> double { return limitRate(step(target - measured, dt), dt); }
+auto Controller::compute(Real target, Real measured, Real dt) -> Real { return limitRate(step(target - measured, dt), dt); }
 
 // NOLINTNEXTLINE
-auto Controller::computeInRange(double target, double measured, double dt) -> double { return limitRate(step(wrapError(target - measured), dt), dt); }
+auto Controller::computeInRange(Real target, Real measured, Real dt) -> Real { return limitRate(step(wrapError(target - measured), dt), dt); }
 
-auto Controller::wrapError(double error) const -> double
+auto Controller::wrapError(Real error) const -> Real
 {
-    if (m_errorRange <= std::numeric_limits<double>::epsilon()) {
+    if (m_errorRange <= std::numeric_limits<Real>::epsilon()) {
         return error;
     }
     return std::remainder(error, m_errorRange);
 }
 
 // NOLINTNEXTLINE
-auto Controller::limitRate(double output, double dt) -> double
+auto Controller::limitRate(Real output, Real dt) -> Real
 {
-    const double maxDelta = m_rateLimit * dt;
+    const Real maxDelta = m_rateLimit * dt;
 
-    double delta = output - m_prevOutput;
+    Real delta = output - m_prevOutput;
     if (delta > maxDelta) {
         delta = maxDelta;
     } else if (delta < -maxDelta) {
         delta = -maxDelta;
     }
 
-    const double limited = m_prevOutput + delta;
+    const Real limited = m_prevOutput + delta;
 
     m_prevOutput = limited;
     return limited;
 }
 
-auto Controller::step(double error, double dt) -> double
+auto Controller::step(Real error, Real dt) -> Real
 {
     m_integral   = std::clamp(m_integral + (error * dt), m_integralMin, m_integralMax);
     m_derivative = (error - m_prevError) / dt;

@@ -15,24 +15,28 @@ namespace reanaut
 
 struct WheelVelocities
 {
-    double left{};
-    double right{};
+    using Real = RealType;
+
+    Real left{};
+    Real right{};
 };
 
 class Odometry
 {
 public:
 
-    explicit Odometry(double tickToMeter = kTickToMeter) : m_tickToMeter(tickToMeter) {}
+    using Real = RealType;
 
-    [[nodiscard]] auto update(int32_t encoderLeft, int32_t encoderRight, double dt) -> std::optional<WheelVelocities>;
+    explicit Odometry(Real tickToMeter = kTickToMeter) : m_tickToMeter(tickToMeter) {}
+
+    [[nodiscard]] auto update(int32_t encoderLeft, int32_t encoderRight, Real dt) -> std::optional<WheelVelocities>;
 
     void reset();
 
 private:
 
-    double m_tickToMeter;
-    bool   m_initialized{};
+    Real m_tickToMeter;
+    bool m_initialized{};
 
     int32_t m_prevLeft{};
     int32_t m_prevRight{};
@@ -42,23 +46,25 @@ class Movement
 {
 public:
 
-    using ControlType               = Control<double>;
-    using FilterType                = Kalman::ExtendedKalmanFilter<State<double>>;
-    using MeasurementType           = Measurement<double>;
-    using MeasurementCovarianceType = Kalman::Covariance<Measurement<double>>;
-    using MeasureType               = MeasurementModel<double>;
-    using StateCovarianceType       = Kalman::Covariance<State<double>>;
-    using StateType                 = State<double>;
-    using SystemType                = SystemModel<double>;
+    using Real = RealType;
+
+    using ControlType               = Control<Real>;
+    using FilterType                = Kalman::ExtendedKalmanFilter<State<Real>>;
+    using MeasurementType           = Measurement<Real>;
+    using MeasurementCovarianceType = Kalman::Covariance<Measurement<Real>>;
+    using MeasureType               = MeasurementModel<Real>;
+    using StateCovarianceType       = Kalman::Covariance<State<Real>>;
+    using StateType                 = State<Real>;
+    using SystemType                = SystemModel<Real>;
 
     Movement();
 
     [[nodiscard]] auto getState() const -> const StateType&;
 
-    void process(const Feedback& feedback, double dt);
+    void process(const Feedback& feedback, Real dt);
 
     // NOLINTNEXTLINE(readability-identifier-length)
-    void reset(double x, double y, double theta);
+    void reset(Real x, Real y, Real theta);
 
 private:
 

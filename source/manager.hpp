@@ -4,6 +4,9 @@
 #include "connections.hpp"
 #include "kobuki.hpp"
 #include "laser.hpp"
+#include "movement.hpp"
+#include "navigator.hpp"
+#include "time.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
@@ -63,6 +66,9 @@ private:
     LaserConnection  m_laser;
     Feedback         m_feedback;
     Command          m_command;
+    Time             m_time;
+    Movement         m_movement;
+    Navigator        m_navigator;
     // camera _camera_receiver;
 };
 } // namespace reanaut

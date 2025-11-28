@@ -9,6 +9,7 @@
 namespace reanaut
 {
 
+using RealType  = double;
 using IndexType = std::size_t;
 using DiffType  = std::ptrdiff_t;
 

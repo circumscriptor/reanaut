@@ -10,9 +10,9 @@ namespace reanaut
 {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto Odometry::update(int32_t encoderLeft, int32_t encoderRight, double dt) -> std::optional<WheelVelocities>
+auto Odometry::update(int32_t encoderLeft, int32_t encoderRight, Real dt) -> std::optional<WheelVelocities>
 {
-    if (dt <= std::numeric_limits<double>::epsilon()) {
+    if (dt <= std::numeric_limits<Real>::epsilon()) {
         return std::nullopt;
     }
 
@@ -68,7 +68,7 @@ Movement::Movement() : m_odometry(kTickToMeter), m_measure(kWheelbaseDistance)
 
 auto Movement::getState() const -> const StateType& { return m_filter.getState(); }
 
-void Movement::process(const Feedback& feedback, double dt)
+void Movement::process(const Feedback& feedback, Real dt)
 {
     const auto& sensors  = feedback.getBasicSensors();
     const auto& inertial = feedback.getInertial();
@@ -91,7 +91,7 @@ void Movement::process(const Feedback& feedback, double dt)
 }
 
 // NOLINTNEXTLINE(readability-identifier-length,bugprone-easily-swappable-parameters)
-void Movement::reset(double x, double y, double theta)
+void Movement::reset(Real x, Real y, Real theta)
 {
     StateType state;
     state.setZero();

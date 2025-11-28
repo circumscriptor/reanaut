@@ -14,7 +14,7 @@ namespace reanaut
 Manager::Manager(const Options& options)
     : m_signals(m_ioContext, SIGINT, SIGTERM), // Listen for Ctrl+C and termination signals
       m_timer(m_ioContext), m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort),
-      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort)
+      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort), m_navigator({}, {}) // TODO
 {
     waitForSignal();
     scheduleNextUpdate();
@@ -75,13 +75,23 @@ void Manager::update()
         return;
     }
 
+    m_command.reset();
+
     if (m_laser.getLatestSweep(m_scans)) {
         // _navigation.process_lidar_scans(_full_scan);
     }
 
     if (m_kobuki.getLatestFeedback(m_feedback)) {
-        // _time.process_feedback(_feedback);
-        // _movement.process_feedback(_feedback, _time.get_delta_time_s());
+        m_time.process(m_feedback);
+        m_movement.process(m_feedback, m_time.getDeltaTime());
+
+        auto velocity = m_navigator.update(m_movement.getState(), m_time.getDeltaTime());
+        if (velocity) {
+            auto [speed, radius] = velocity->computeControl();
+            m_command.baseControl(speed, radius);
+        } else {
+            m_command.baseControl(0, 0);
+        }
 
         // const auto current_x_m       = static_cast<float>(_movement.get_x());
         // const auto current_y_m       = static_cast<float>(_movement.get_y());
@@ -108,8 +118,6 @@ void Manager::update()
         //     _movement.set_rotation_speed(motion_command.angular_velocity_rad_s);
         // }
     }
-
-    m_command.reset();
 
     if (m_command.size() > 0) {
         m_kobuki.asyncSend(m_command);
