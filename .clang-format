@@ -1,0 +1,71 @@
+---
+# BasedOnStyle: Chromium
+BasedOnStyle: LLVM
+AccessModifierOffset: -4
+AlignArrayOfStructures: Right
+AlignConsecutiveAssignments:
+  Enabled: true
+AlignConsecutiveBitFields:
+  Enabled: true
+AlignConsecutiveDeclarations:
+  Enabled: true
+AlignConsecutiveMacros:
+  Enabled: true
+AlignEscapedNewlines: LeftWithLastLine
+BreakBeforeBraces: Custom
+BreakTemplateDeclarations: Yes
+BraceWrapping:
+    AfterClass: true
+    AfterControlStatement: false
+    AfterEnum: true
+    AfterFunction: true
+    AfterNamespace: true
+    AfterStruct: true
+    BeforeCatch: false
+    BeforeElse: false
+ColumnLimit: 160
+EmptyLineAfterAccessModifier: Always
+EmptyLineBeforeAccessModifier: Always
+FixNamespaceComments: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^\"[[:alnum:]\_]+\.(h|hpp)\"'
+    Priority: 0
+  - Regex: '^\"[[:alnum:]\_\/]+\.(h|hpp)\"'
+    Priority: 1
+  - Regex: '^\<wsgs\/[[:alnum:]\_\/]+\.(h|hpp)\>'
+    Priority: 2
+  - Regex: '^\<windows\.h\>'
+    Priority: 3
+    SortPriority: 1
+    CaseSensitive: false
+  - Regex: '^\<.*\.(h|hpp|hxx)\>'
+    Priority: 3
+    SortPriority: 2
+  - Regex: '^\<[[:alnum:]\_]+\>'
+    Priority: 4
+IndentPPDirectives: BeforeHash
+IndentWidth: 4
+IndentCaseBlocks: false
+IndentCaseLabels: true
+InsertBraces: true
+InsertNewlineAtEOF: true
+Macros:
+  - TracyGpuCollect=x;
+  - TracyGpuContext=x;
+  - TracyGpuZone(x)=(x);
+  - TracySetProgramName(x)=(x);
+PointerAlignment: Left
+QualifierAlignment: Custom
+QualifierOrder:
+  - friend
+  - static
+  - constexpr
+  - inline
+  - volatile
+  - const
+  - type
+SpacesBeforeTrailingComments: 1
+Standard: Latest
+UseTab: Never
+...
