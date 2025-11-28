@@ -1,11 +1,17 @@
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_gpu.h>
-#include <SDL3/SDL_main.h>
-#include <SDL3/SDL_video.h>
+#include "canvas.hpp"
+
+#include <imgui.h>
+#include <implot.h>
 
 auto main(int argc, char** argv) -> int
 {
     (void)argc;
     (void)argv;
+
+    reanaut::Canvas canvas;
+    canvas.run([]() {
+        ImGui::ShowDemoWindow();
+        ImPlot::ShowDemoWindow();
+    });
     return 0;
 }
