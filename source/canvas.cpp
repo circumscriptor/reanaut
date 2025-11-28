@@ -45,6 +45,8 @@ Canvas::~Canvas()
     SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD);
 }
 
+void Canvas::close() noexcept { m_shouldClose = true; }
+
 void Canvas::run(const DrawCallback& callback)
 {
     while (not m_shouldClose) {

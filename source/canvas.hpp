@@ -28,6 +28,8 @@ public:
     Canvas(int32_t width = kDefaultWidth, int32_t height = kDefaultHeight);
     ~Canvas();
 
+    void close() noexcept;
+
     void run(const DrawCallback& callback);
 
 protected:
