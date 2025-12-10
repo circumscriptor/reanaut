@@ -1,9 +1,12 @@
+#include "canvas.hpp"
 #include "kobuki.hpp"
 #include "manager.hpp"
 
+#include <SDL3/SDL_gpu.h>
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/system/detail/error_code.hpp>
+#include <imgui.h>
 
 #include <csignal>
 #include <print>
@@ -14,7 +17,9 @@ namespace reanaut
 Manager::Manager(const Options& options)
     : m_signals(m_ioContext, SIGINT, SIGTERM), // Listen for Ctrl+C and termination signals
       m_timer(m_ioContext), m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort),
-      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort), m_navigator({}, {}) // TODO
+      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort), //
+      m_navigator({}, {}),                                                                   // TODO
+      m_map(m_canvas.device())                                                               //
 {
     waitForSignal();
     scheduleNextUpdate();
@@ -128,7 +133,10 @@ void Manager::update()
 
 void Manager::run()
 {
-    m_canvas.run([this]() { m_ioContext.poll(); });
+    m_canvas.run([this](SDL_GPUCommandBuffer* commandBuffer) {
+        m_ioContext.poll();
+        m_map.draw(commandBuffer);
+    });
     stopMotor();
 }
 

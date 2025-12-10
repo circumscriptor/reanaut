@@ -9,13 +9,18 @@ find_package(OpenCV CONFIG REQUIRED)
 # ImGui
 file(GLOB imgui_sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "imgui-docking/*.cpp")
 add_library(imgui-docking STATIC)
-target_sources(imgui-docking PRIVATE ${imgui_sources})
+target_compile_definitions(imgui-docking PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 target_include_directories(imgui-docking SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui-docking")
 target_link_libraries(imgui-docking PRIVATE SDL3::SDL3)
+target_sources(imgui-docking PRIVATE ${imgui_sources})
 
 # Kalman
 add_library(kalman INTERFACE)
 target_include_directories(kalman SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/kalman/include")
+
+# PF (particle filter)
+add_library(pf INTERFACE)
+target_include_directories(pf SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/pf/include")
 
 #
 # Main target
@@ -34,6 +39,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     imgui-docking
     kalman
     opencv_highgui
+    pf
     SDL3::SDL3
     # c++ c++abi
 )

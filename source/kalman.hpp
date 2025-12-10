@@ -14,11 +14,11 @@ namespace reanaut
 {
 
 template <typename T>
-class State : public Kalman::Vector<T, 3>
+class State : public Kalman::Vector<T, 5>
 {
 public:
 
-    KALMAN_VECTOR(State, T, 3)
+    KALMAN_VECTOR(State, T, 5)
 
     static constexpr size_t kX     = 0; //! X-position
     static constexpr size_t kY     = 1; //! Y-Position

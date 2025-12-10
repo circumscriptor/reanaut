@@ -23,10 +23,12 @@ public:
     static constexpr int32_t kDefaultWidth  = 1280;
     static constexpr int32_t kDefaultHeight = 720;
 
-    using DrawCallback = std::function<void()>;
+    using DrawCallback = std::function<void(SDL_GPUCommandBuffer* commandBuffer)>;
 
     Canvas(int32_t width = kDefaultWidth, int32_t height = kDefaultHeight);
     ~Canvas();
+
+    [[nodiscard]] auto device() const noexcept -> SDL_GPUDevice* { return m_device; }
 
     void close() noexcept;
 

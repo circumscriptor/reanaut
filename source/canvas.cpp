@@ -69,6 +69,8 @@ void Canvas::run(const DrawCallback& callback)
             continue;
         }
 
+        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(m_device);
+
         ImGui_ImplSDLGPU3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
@@ -76,14 +78,13 @@ void Canvas::run(const DrawCallback& callback)
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
         if (callback != nullptr) {
-            callback();
+            callback(commandBuffer);
         }
 
         ImGui::Render();
         ImDrawData* drawData = ImGui::GetDrawData();
 
-        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(m_device);
-        SDL_GPUTexture*       swapchainTexture;
+        SDL_GPUTexture* swapchainTexture;
         SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, m_window, &swapchainTexture, nullptr, nullptr);
 
         if (swapchainTexture != nullptr) {

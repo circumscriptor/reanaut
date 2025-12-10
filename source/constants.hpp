@@ -64,8 +64,42 @@ static constexpr uint32_t  kWallWeight                  = 9;
 static constexpr uint32_t  kWeightThresholdLower        = 3;
 static constexpr uint32_t  kWeightThresholdUpper        = 3;
 
+// Robot/Sensor Specs
+const double kLidarMaxRange = 10.0;
+const double kLidarMinRange = 0.1;
+const double kMapResolution = 0.05;  // 5cm per cell
+const int    kMapWidth      = 400;   // 20 meters wide
+const int    kMapHeight     = 400;   // 20 meters high
+const double kMapOriginX    = -10.0; // Meters (Center the map)
+const double kMapOriginY    = -10.0;
+
+// Log Odds Parameters (Tuned for stability)
+const double kLogOddsOccupied = 0.85; // Probability if hit
+const double kLogOddsFree     = 0.4;  // Probability if passed through
+const double kLogOddsMax      = 5.0;  // Clamping max
+const double kLogOddsMin      = -5.0; // Clamping min
+
+// Noise parameters
+const double kStdX     = 0.05;
+const double kStdY     = 0.05;
+const double kStdTheta = 0.02;
+const double kStdLidar = 0.2;
+
 // from kobuki manual https://yujinrobot.github.io/kobuki/doxygen/enAppendixProtocolSpecification.html
 
 constexpr auto isZero(double value) noexcept -> bool { return std::abs(value) <= std::numeric_limits<double>::epsilon(); }
+
+struct Point2
+{
+    using Real = RealType;
+
+    Real x{};
+    Real y{};
+};
+
+struct Pose : Point2
+{
+    Real theta{};
+};
 
 } // namespace reanaut

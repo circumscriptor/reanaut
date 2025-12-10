@@ -4,6 +4,7 @@
 #include "connections.hpp"
 #include "kobuki.hpp"
 #include "laser.hpp"
+#include "map.hpp"
 #include "movement.hpp"
 #include "navigator.hpp"
 #include "time.hpp"
@@ -69,6 +70,7 @@ private:
     Time             m_time;
     Movement         m_movement;
     Navigator        m_navigator;
+    Map              m_map;
     // camera _camera_receiver;
 };
 } // namespace reanaut
