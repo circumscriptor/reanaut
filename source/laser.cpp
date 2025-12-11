@@ -1,0 +1,16 @@
+#include "constants.hpp"
+#include "laser.hpp"
+
+#include <cmath>
+#include <numbers>
+
+namespace reanaut
+{
+
+auto LaserScan::toMeters() const -> Real { return distance * kScanDistanceToWorld; }
+
+auto LaserScan::toBeamAngle() const -> Real { return Real(angle) / 180.0 * std::numbers::pi; }
+
+auto LaserScan::toWorldAngle(Real theta) const -> Real { return std::fmod(theta + toBeamAngle(), 2.0 * std::numbers::pi); }
+
+} // namespace reanaut

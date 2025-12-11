@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <numbers>
 #include <random>
 #include <vector>
@@ -36,10 +37,12 @@ void ParticleFilter::prediction(Real velocity, Real yawRate, Real dt)
             particle.y += (velocity / yawRate) * (std::cos(particle.theta) - std::cos(particle.theta + (yawRate * dt)));
             particle.theta += yawRate * dt;
         }
+
         // Add Process Noise
-        particle.x += m_distX(m_gen);
-        particle.y += m_distY(m_gen);
-        particle.theta = std::fmod(particle.theta + m_distTheta(m_gen), std::numbers::pi);
+        particle.x += m_distX(m_gen) * dt;
+        particle.y += m_distY(m_gen) * dt;
+        particle.theta += m_distTheta(m_gen) * dt;
+        particle.theta = std::atan2(std::sin(particle.theta), std::cos(particle.theta));
     }
 }
 
@@ -51,13 +54,12 @@ void ParticleFilter::updateWeights(const std::vector<LaserScan>& scans, const Oc
         Real weight = 1.0;
 
         for (const auto& scan : scans) {
-            const Real obs = scan.distance * 0.001;
-            if (obs > kLidarMaxRange || obs < kLidarMinRange) {
+            const Real range = scan.toMeters();
+            if (range > kLidarMaxRange || range < kLidarMinRange) {
                 continue;
             }
 
-            const Real beamAngle  = scan.angle * std::numbers::pi / 180.0;
-            const Real worldAngle = std::fmod(particle.theta + beamAngle, std::numbers::pi);
+            const Real worldAngle = scan.toWorldAngle(particle.theta);
 
             // Raycast against the Occupancy Grid
             const Real pred = map.getDistance({
@@ -66,8 +68,9 @@ void ParticleFilter::updateWeights(const std::vector<LaserScan>& scans, const Oc
             });
 
             // Weight based on difference
-            weight *= gaussianProb(pred, kStdLidar, obs);
+            weight *= gaussianProb(pred, kStdLidar, range);
         }
+
         particle.weight = weight;
         maxWeight       = std::max(weight, maxWeight);
     }
@@ -84,23 +87,34 @@ void ParticleFilter::resample()
     // Generate weight vector for distribution
     m_weights.clear();
     m_weights.reserve(kNumParticles);
+
+    Real sum{};
     for (const auto& particle : m_particles) {
         m_weights.push_back(particle.weight);
+        sum += particle.weight;
+    }
+
+    // If sum is 0 (or very close), the filter is lost.
+    if (sum <= std::numeric_limits<double>::epsilon()) {
+        // Recovery: Force uniform weights.
+        std::fill(m_weights.begin(), m_weights.end(), 1.0);
     }
 
     std::discrete_distribution<int> dist(m_weights.begin(), m_weights.end());
 
     // Fill the buffer
-    for (int i = 0; i < kNumParticles; ++i) {
-        m_resampleBuffer[i]        = m_particles[dist(m_gen)];
-        m_resampleBuffer[i].weight = 1.0; // Reset weight
+    m_resampleBuffer.clear();
+    m_resampleBuffer.resize(m_particles.size());
+    for (auto& particle : m_resampleBuffer) {
+        particle        = m_particles[dist(m_gen)];
+        particle.weight = 1.0; // Reset weight
     }
 
     // Swap buffer with main particle vector (avoids reallocation)
     std::swap(m_particles, m_resampleBuffer);
 }
 
-auto ParticleFilter::getBestEstimate() -> Particle
+auto ParticleFilter::getBestEstimate() const -> Particle
 {
     Real pX     = 0;
     Real pY     = 0;

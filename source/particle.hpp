@@ -35,8 +35,7 @@ public:
     void updateWeights(const std::vector<LaserScan>& scans, const OccupancyGrid& map);
     void resample();
 
-    auto getBestEstimate() -> Particle;
-
+    [[nodiscard]] auto getBestEstimate() const -> Particle;
     [[nodiscard]] auto particles() const -> std::span<const Particle> { return m_particles; }
 
 protected:

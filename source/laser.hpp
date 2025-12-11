@@ -1,5 +1,7 @@
 #pragma once
 
+#include "constants.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -11,10 +13,16 @@ static constexpr size_t kMaxLaserScans = 1000;
 
 struct LaserScan
 {
+    using Real = RealType;
+
     uint32_t quality;   //!< ?
     float    angle;     //!< 0-360 [deg]
     float    distance;  //!< 0=out-of-range [mm]
     uint32_t timestamp; //!< ?
+
+    [[nodiscard]] auto toMeters() const -> Real;
+    [[nodiscard]] auto toBeamAngle() const -> Real;
+    [[nodiscard]] auto toWorldAngle(Real theta) const -> Real;
 };
 
 } // namespace reanaut

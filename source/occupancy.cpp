@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <numbers>
 #include <vector>
 
 namespace reanaut
@@ -25,15 +24,12 @@ void OccupancyGrid::updateFromScans(const Pose& robot, const std::vector<LaserSc
     }
 
     for (auto scan : scans) {
-        const Real range = scan.distance * 0.001;
-
-        // Filter invalid ranges
+        const Real range = scan.toMeters();
         if (range < kLidarMinRange || range >= kLidarMaxRange) {
             continue;
         }
 
-        const Real beamAngle  = Real(scan.angle) / 180.0 * std::numbers::pi;
-        const Real worldAngle = std::fmod(robot.theta + beamAngle, 2.0 * std::numbers::pi);
+        const Real worldAngle = scan.toWorldAngle(robot.theta);
 
         const Point2 end{
             .x = robot.x + (range * std::cos(worldAngle)),

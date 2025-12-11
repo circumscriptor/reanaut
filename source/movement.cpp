@@ -4,13 +4,24 @@
 
 #include <cstdint>
 #include <limits>
+#include <numbers>
 #include <optional>
 
 namespace reanaut
 {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto Odometry::update(int32_t encoderLeft, int32_t encoderRight, Real dt) -> std::optional<WheelVelocities>
+Odometry::Odometry(Real tickToMeter, Real tickToDegree) : m_tickToMeter(tickToMeter), m_tickToDegree(tickToDegree) {}
+
+auto Odometry::process(const Feedback& feedback, Real dt) -> std::optional<OdometryFeedback>
+{
+    const auto& sensors  = feedback.getBasicSensors();
+    const auto& inertial = feedback.getInertial();
+    return update(sensors.leftEncoder, sensors.rightEncoder, inertial.angle, inertial.angleRate, dt);
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+auto Odometry::update(int32_t encoderLeft, int32_t encoderRight, int32_t angle, int32_t angleRate, Real dt) -> std::optional<OdometryFeedback>
 {
     if (dt <= std::numeric_limits<Real>::epsilon()) {
         return std::nullopt;
@@ -19,18 +30,33 @@ auto Odometry::update(int32_t encoderLeft, int32_t encoderRight, Real dt) -> std
     if (not m_initialized) {
         m_prevLeft    = encoderLeft;
         m_prevRight   = encoderRight;
+        m_prevAngle   = angle;
         m_initialized = true;
         return std::nullopt;
     }
 
-    const auto dLeft  = encoderLeft - m_prevLeft;
-    const auto dRight = encoderRight - m_prevRight;
-    m_prevLeft        = encoderLeft;
-    m_prevRight       = encoderRight;
+    const auto leftDiff  = static_cast<int16_t>(encoderLeft - m_prevLeft);
+    const auto rightDiff = static_cast<int16_t>(encoderRight - m_prevRight);
+    const auto angleDiff = static_cast<int16_t>(angle - m_prevAngle);
+    m_prevLeft           = encoderLeft;
+    m_prevRight          = encoderRight;
+    m_prevAngle          = angle;
 
-    return WheelVelocities{
-        .left  = (dLeft * m_tickToMeter) / dt,
-        .right = (dRight * m_tickToMeter) / dt,
+    const auto wheelLeft  = Real(leftDiff * m_tickToMeter) / dt;
+    const auto wheelRight = Real(rightDiff * m_tickToMeter) / dt;
+
+#if defined(SIMULATION)
+    const auto inertialRate = (angleDiff * m_tickToDegree) / 180.0 * std::numbers::pi / dt;
+#else
+    (void)angleDiff;
+    const auto inertialRate = (angleRate * m_tickToDegree) / 180.0 * std::numbers::pi;
+#endif
+
+    return OdometryFeedback{
+        .wheelLeft  = wheelLeft,
+        .wheelRight = wheelRight,
+        .angular    = inertialRate,
+        .linear     = (wheelLeft + wheelRight) / 2.0,
     };
 }
 
@@ -73,7 +99,7 @@ void Movement::process(const Feedback& feedback, Real dt)
     const auto& sensors  = feedback.getBasicSensors();
     const auto& inertial = feedback.getInertial();
 
-    auto wheels = m_odometry.update(sensors.leftEncoder, sensors.rightEncoder, dt);
+    auto wheels = m_odometry.update(sensors.leftEncoder, sensors.rightEncoder, inertial.angle, inertial.angleRate, dt);
     if (not wheels) {
         return;
     }
@@ -83,8 +109,8 @@ void Movement::process(const Feedback& feedback, Real dt)
 
     // NOLINTNEXTLINE(readability-identifier-length)
     MeasurementType z;
-    z.vl()   = wheels->left;
-    z.vr()   = wheels->right;
+    z.vl()   = wheels->wheelLeft;
+    z.vr()   = wheels->wheelRight;
     z.gyro() = inertial.angleRate;
 
     m_filter.update(m_measure, z);

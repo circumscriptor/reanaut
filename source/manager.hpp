@@ -8,6 +8,7 @@
 #include "movement.hpp"
 #include "navigator.hpp"
 #include "occupancy.hpp"
+#include "particle.hpp"
 #include "time.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -69,10 +70,12 @@ private:
     Feedback         m_feedback;
     Command          m_command;
     Time             m_time;
-    Movement         m_movement;
     Navigator        m_navigator;
     OccupancyGrid    m_occupancy;
     Map              m_map;
+    Odometry         m_odometry;
+    ParticleFilter   m_filter;
     // camera _camera_receiver;
+    // Movement         m_movement;
 };
 } // namespace reanaut

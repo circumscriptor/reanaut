@@ -13,12 +13,14 @@
 namespace reanaut
 {
 
-struct WheelVelocities
+struct OdometryFeedback
 {
     using Real = RealType;
 
-    Real left{};
-    Real right{};
+    Real wheelLeft{};
+    Real wheelRight{};
+    Real angular{};
+    Real linear{};
 };
 
 class Odometry
@@ -27,19 +29,22 @@ public:
 
     using Real = RealType;
 
-    explicit Odometry(Real tickToMeter = kTickToMeter) : m_tickToMeter(tickToMeter) {}
+    explicit Odometry(Real tickToMeter = kTickToMeter, Real tickToDegree = kTickToDegree);
 
-    [[nodiscard]] auto update(int32_t encoderLeft, int32_t encoderRight, Real dt) -> std::optional<WheelVelocities>;
+    [[nodiscard]] auto process(const Feedback& feedback, Real dt) -> std::optional<OdometryFeedback>;
+    [[nodiscard]] auto update(int32_t encoderLeft, int32_t encoderRight, int32_t angle, int32_t angleRate, Real dt) -> std::optional<OdometryFeedback>;
 
     void reset();
 
 private:
 
     Real m_tickToMeter;
+    Real m_tickToDegree;
     bool m_initialized{};
 
     int32_t m_prevLeft{};
     int32_t m_prevRight{};
+    int32_t m_prevAngle{};
 };
 
 class Movement

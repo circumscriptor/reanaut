@@ -33,6 +33,13 @@ void Map::update(const ParticleFilter& filter)
             m_texture.setPixel(index.x, index.y, 0xFF0000FF); // NOLINT
         }
     }
+
+    const auto bestEstimate = filter.getBestEstimate();
+
+    Index index;
+    if (worldToGrid(bestEstimate, index)) {
+        m_texture.setPixel(index.x, index.y, 0xFF00FF00); // NOLINT
+    }
 }
 
 void Map::draw(SDL_GPUCommandBuffer* commandBuffer)
