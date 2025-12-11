@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <numbers>
 #include <optional>
 #include <vector>
 
@@ -105,6 +106,51 @@ void OccupancyGrid::updateFromCloud(const Pose& robot, const PointCloud& cloud)
             traceLine(*index, *endIndex);
         }
     }
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void OccupancyGrid::getVirtualScan(std::vector<VirtualReading>& readings, const Pose& pose, double maxDistance, int numRays) const
+{
+    readings.clear();
+    readings.reserve(numRays);
+
+    const double angleStep = (2.0 * std::numbers::pi) / numRays;
+
+    for (int i = 0; i < numRays; ++i) {
+        double angle = -std::numbers::pi + (i * angleStep);
+
+        if (angle > std::numbers::pi) {
+            angle -= 2.0 * std::numbers::pi;
+        }
+
+        const double worldAngle = std::fmod(pose.theta + angle, 2.0 * std::numbers::pi);
+        const double dist       = castRay(Pose({.x = pose.x, .y = pose.y}, worldAngle), maxDistance);
+        readings.push_back({.angle    = angle, // Relative angle (Tangent bug needs this)
+                            .distance = dist,
+                            .worldX   = pose.x + (std::cos(worldAngle) * dist),
+                            .worldY   = pose.y + (std::sin(worldAngle) * dist)});
+    }
+}
+
+auto OccupancyGrid::castRay(const Pose& pose, Real maxDistance) const -> Real
+{
+    const Real step = resolution();
+    const Real dx   = std::cos(pose.theta);
+    const Real dy   = std::sin(pose.theta);
+
+    Real dist = 0.0;
+    while (dist < maxDistance) {
+        const Point2 check{
+            .x = pose.x + (dx * dist),
+            .y = pose.y + (dy * dist),
+        };
+
+        if (isOccupied(check)) {
+            return dist;
+        }
+        dist += step;
+    }
+    return maxDistance; // No wall found
 }
 
 void OccupancyGrid::traceLine(Index index0, Index index1)

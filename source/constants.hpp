@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -27,7 +28,6 @@ static constexpr double    kMaxForwardSpeed             = 0.5;
 static constexpr double    kMaxRotationError            = 0.5;
 static constexpr double    kMaxRotationSpeedRadps       = std::numbers::pi / 2.0;
 static constexpr double    kMillisecondToSecond         = 0.001;
-static constexpr double    kScanDistanceToWorld         = 0.001;
 static constexpr double    kMinDistanceError            = 0.25;
 static constexpr double    kMinRotationError            = 0.05;
 static constexpr double    kNoteConversionFactor        = 0.00000275;
@@ -39,11 +39,12 @@ static constexpr double    kRadiusThreshold             = 0.2;
 static constexpr double    kRotateD                     = 0.0;
 static constexpr double    kRotateI                     = 0.1;
 static constexpr double    kRotateP                     = 1.0;
-static constexpr double    kTickToMeter                 = 0.000085292090497737556558;
+static constexpr double    kScanDistanceToWorld         = 0.001;
 static constexpr double    kTickToDegree                = 0.01;
-static constexpr double    kTranslateD                  = 0.01;
-static constexpr double    kTranslateI                  = 0.2;
-static constexpr double    kTranslateP                  = 0.4;
+static constexpr double    kTickToMeter                 = 0.000085292090497737556558;
+static constexpr double    kTranslateD                  = 0.0;
+static constexpr double    kTranslateI                  = 0.0;
+static constexpr double    kTranslateP                  = 1.0;
 static constexpr double    kWallFollowSpeed             = 10.0; // mm/s
 static constexpr double    kWheelbaseDistance           = 0.23; // [meters]
 static constexpr double    kWheelbaseDistanceMm         = kWheelbaseDistance * 1000.0;
@@ -67,13 +68,15 @@ static constexpr uint32_t  kWeightThresholdLower        = 3;
 static constexpr uint32_t  kWeightThresholdUpper        = 3;
 
 // Robot/Sensor Specs
-const double kLidarMaxRange = 20.0;
-const double kLidarMinRange = 0.1;
-const double kMapResolution = 0.05;  // 5cm per cell
-const int    kMapWidth      = 400;   // 20 meters wide
-const int    kMapHeight     = 400;   // 20 meters high
-const double kMapOriginX    = -10.0; // Meters (Center the map)
-const double kMapOriginY    = -10.0;
+static constexpr double kLidarMaxRange = 20.0;
+static constexpr double kLidarMinRange = 0.1;
+static constexpr double kMapResolution = 0.05; // 5cm per cell
+static constexpr double kMapLength     = 15.0; // 10 meters
+static constexpr double kMapHalfLength = kMapLength / 2.0;
+static constexpr int    kMapWidth      = int(kMapLength / kMapResolution);
+static constexpr int    kMapHeight     = int(kMapLength / kMapResolution);
+static constexpr double kMapOriginX    = -kMapHalfLength; // Meters (Center the map)
+static constexpr double kMapOriginY    = -kMapHalfLength;
 
 // Log Odds Parameters (Tuned for stability)
 const double kLogOddsOccupied = 0.85; // Probability if hit
@@ -97,6 +100,20 @@ struct Point2
 
     Real x{};
     Real y{};
+
+    auto operator-(const Point2& other) const noexcept -> Point2
+    {
+        return {
+            .x = x - other.x,
+            .y = y - other.y,
+        };
+    }
+
+    [[nodiscard]] auto dot(const Point2& other) const noexcept -> Real { return (x * other.x) + (y * other.y); }
+    [[nodiscard]] auto lengthSq() const noexcept -> Real { return dot(*this); }
+    [[nodiscard]] auto length() const noexcept -> Real { return std::sqrt(lengthSq()); }
+    [[nodiscard]] auto distanceSq(const Point2& other) const -> Real { return (*this - other).lengthSq(); }
+    [[nodiscard]] auto distance(const Point2& other) const -> Real { return (*this - other).length(); }
 };
 
 struct Pose : Point2

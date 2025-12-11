@@ -53,7 +53,7 @@ public:
     [[nodiscard]] auto get(Index index) const -> std::optional<Real>;
 
     // Returns distance to nearest obstacle in the map from (x,y) at angle theta
-    [[nodiscard]] auto getDistance(const Pose& pose) const -> Real;
+    [[nodiscard]] auto getDistance(const Pose& pose, Real maxDistance = kLidarMaxRange) const -> Real;
 
 protected:
 

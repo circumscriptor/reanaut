@@ -20,9 +20,9 @@ namespace reanaut
 Manager::Manager(const Options& options)
     : m_signals(m_ioContext, SIGINT, SIGTERM), // Listen for Ctrl+C and termination signals
       m_timer(m_ioContext), m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort),
-      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort),                                          //
-      m_navigator({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kTranslateI, .kD = kTranslateD}), // TODO
-      m_map(m_canvas.device()),                                                                                                       //
+      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort),                                    //
+      m_navigator({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}), // TODO
+      m_map(m_canvas.device()),                                                                                                 //
       m_filter(std::random_device()())
 {
     waitForSignal();
@@ -212,7 +212,7 @@ void Manager::run()
 
 void Manager::processKeyboard()
 {
-    const double kManualLinearSpeed  = 1.0; // m/s
+    const double kManualLinearSpeed  = 0.3; // m/s
     const double kManualAngularSpeed = 1.2; // rad/s
 
     // Check Linear (Forward/Backward)

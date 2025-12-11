@@ -53,10 +53,9 @@ auto Grid::get(Index index) const -> std::optional<Real>
     return at(index);
 }
 
-auto Grid::getDistance(const Pose& pose) const -> Real
+auto Grid::getDistance(const Pose& pose, Real maxDistance) const -> Real
 {
     const Real stepSize = resolution();
-    const Real maxDist  = kLidarMaxRange;
 
     Real currDist = 0.0;
 
@@ -64,7 +63,7 @@ auto Grid::getDistance(const Pose& pose) const -> Real
     const Real dy = std::sin(pose.theta);
 
     // Simple stepping raycast (faster than Bresenham for readout)
-    while (currDist < maxDist) {
+    while (currDist < maxDistance) {
         const Point2 check{
             .x = pose.x + (dx * currDist),
             .y = pose.y + (dy * currDist),
@@ -72,7 +71,7 @@ auto Grid::getDistance(const Pose& pose) const -> Real
 
         Index index{};
         if (not worldToGrid(check, index)) {
-            return maxDist; // Out of bounds is "open space" or max range
+            return maxDistance; // Out of bounds is "open space" or max range
         }
 
         // If log odds > 0, it's likely occupied
@@ -81,7 +80,7 @@ auto Grid::getDistance(const Pose& pose) const -> Real
         }
         currDist += stepSize;
     }
-    return maxDist;
+    return maxDistance;
 }
 
 void Grid::updateCell(Index index, Real change)
