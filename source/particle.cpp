@@ -1,3 +1,4 @@
+#include "cloud.hpp"
 #include "constants.hpp"
 #include "laser.hpp"
 #include "occupancy.hpp"
@@ -46,7 +47,7 @@ void ParticleFilter::prediction(Real velocity, Real yawRate, Real dt)
     }
 }
 
-void ParticleFilter::updateWeights(const std::vector<LaserScan>& scans, const OccupancyGrid& map)
+void ParticleFilter::updateFromScans(const std::vector<LaserScan>& scans, const OccupancyGrid& map)
 {
     Real maxWeight = 0.0;
 
@@ -69,6 +70,52 @@ void ParticleFilter::updateWeights(const std::vector<LaserScan>& scans, const Oc
 
             // Weight based on difference
             weight *= gaussianProb(pred, kStdLidar, range);
+        }
+
+        particle.weight = weight;
+        maxWeight       = std::max(weight, maxWeight);
+    }
+
+    // Normalize
+    maxWeight = std::max(maxWeight, kWeightEpsilon);
+    for (auto& particle : m_particles) {
+        particle.weight /= maxWeight;
+    }
+}
+
+void ParticleFilter::updateFromCloud(const PointCloud& cloud, const OccupancyGrid& map)
+{
+    Real maxWeight = 0.0;
+
+    // Pre-calculate constants
+    // If your map resolution is 5cm, sigma should be around 0.1m - 0.2m
+    // const Real sigma = 0.15;
+
+    for (auto& particle : m_particles) {
+        Real weight = 1.0;
+
+        const Real sinT = std::sin(particle.theta);
+        const Real cosT = std::cos(particle.theta);
+
+        for (const auto& point : cloud.points()) {
+            // 1. Transform Point to World Space
+            const Point2 pw{
+                .x = particle.x + (point.x * cosT - point.y * sinT),
+                .y = particle.y + (point.x * sinT + point.y * cosT),
+            };
+
+            // 2. Get Score from Map
+            const auto score = map.getProbabilitySmooth(pw);
+            if (not score) {
+                continue;
+            }
+
+            // 3. Accumulate Weight
+            weight *= *score;
+
+            // A more mathematically rigorous Endpoint Model approach:
+            // weight *= (score * gaussian_term + random_term);
+            // But direct multiplication works fine for simple grids.
         }
 
         particle.weight = weight;

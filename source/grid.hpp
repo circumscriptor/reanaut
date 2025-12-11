@@ -21,10 +21,13 @@ public:
     [[nodiscard]] auto height() const noexcept { return m_height; }
     [[nodiscard]] auto resolution() const noexcept { return m_resolution; }
 
+    [[nodiscard]] auto inBounds(Index index) const -> bool;
+
     // Convert World (meters) to Grid (index)
     auto worldToGrid(Point2 world, Index& index) const -> bool;
 
-    [[nodiscard]] auto worldToGrid(Point2 world) const -> std::optional<Index>;
+    [[nodiscard]]
+    auto worldToGrid(Point2 world) const -> std::optional<Index>;
 
     // Convert Grid to World (for raycasting check)
     void gridToWorld(Index index, Point2& world) const;
@@ -44,8 +47,10 @@ public:
 
     Grid();
 
-    [[nodiscard]] auto grid() -> std::span<Real> { return m_grid; }
+    // [[nodiscard]] auto grid() -> std::span<Real> { return m_grid; }
     [[nodiscard]] auto grid() const -> std::span<const Real> { return m_grid; }
+    [[nodiscard]] auto at(Index index) const -> Real;
+    [[nodiscard]] auto get(Index index) const -> std::optional<Real>;
 
     // Returns distance to nearest obstacle in the map from (x,y) at angle theta
     [[nodiscard]] auto getDistance(const Pose& pose) const -> Real;

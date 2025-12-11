@@ -1,4 +1,5 @@
 #include "canvas.hpp"
+#include "constants.hpp"
 #include "kobuki.hpp"
 #include "manager.hpp"
 
@@ -8,6 +9,7 @@
 #include <boost/system/detail/error_code.hpp>
 #include <imgui.h>
 
+#include <cmath>
 #include <csignal>
 #include <print>
 #include <random>
@@ -18,9 +20,9 @@ namespace reanaut
 Manager::Manager(const Options& options)
     : m_signals(m_ioContext, SIGINT, SIGTERM), // Listen for Ctrl+C and termination signals
       m_timer(m_ioContext), m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort),
-      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort), //
-      m_navigator({}, {}),                                                                   // TODO
-      m_map(m_canvas.device()),                                                              //
+      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort),                                          //
+      m_navigator({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kTranslateI, .kD = kTranslateD}), // TODO
+      m_map(m_canvas.device()),                                                                                                       //
       m_filter(std::random_device()())
 {
     waitForSignal();
@@ -95,18 +97,46 @@ void Manager::update()
             m_filter.prediction(result->linear, result->angular, m_time.getDeltaTime());
             m_bestEstimate = m_filter.getBestEstimate();
         }
+    } else {
+        std::println("SKIPPED FEEDBACK, VERY BAD!");
+        scheduleNextUpdate();
+        return;
     }
 
     if (m_laser.getLatestSweep(m_scans)) {
         m_cloud.fromScans(m_bestEstimate, m_scans);
-        // _navigation.process_lidar_scans(_full_scan);
-        m_occupancy.updateFromScans(m_bestEstimate, m_scans);
-        m_filter.updateWeights(m_scans, m_occupancy);
+        m_occupancy.updateFromCloud(m_bestEstimate, m_cloud);
+        m_filter.updateFromScans(m_scans, m_occupancy);
+        // m_filter.updateFromCloud(m_cloud, m_occupancy);
         m_filter.resample();
         m_map.update(m_occupancy);
         m_map.update(m_filter);
         m_map.update(m_cloud);
+        // _navigation.process_lidar_scans(_full_scan);
+    } else {
+        std::println("SKIPPED LASER SWEEP, SOMEWHAT BAD!");
+        scheduleNextUpdate();
+        return;
     }
+
+    // const Point2 goal{
+    //     .x = m_bestEstimate.x + (m_velocity.linear * std::cos(m_velocity.angular)),
+    //     .y = m_bestEstimate.y + (m_velocity.linear * std::sin(m_velocity.angular)),
+    // };
+
+    // if (not m_navigator.isActive()) {
+    //     m_navigator.setGoal(goal);
+    // } else {
+    //     m_navigator.updateGoal(goal);
+    // }
+
+    // auto velocity = m_navigator.update(m_bestEstimate, m_time.getDeltaTime());
+    // if (velocity) {
+    //     auto [speed, radius] = velocity->computeControl();
+    //     m_command.baseControl(speed, radius);
+    // } else {
+    //     m_command.baseControl(0, 0);
+    // }
 
     auto [speed, radius] = m_velocity.computeControl();
     m_command.baseControl(speed, radius);
@@ -182,7 +212,7 @@ void Manager::run()
 
 void Manager::processKeyboard()
 {
-    const double kManualLinearSpeed  = 0.3; // m/s
+    const double kManualLinearSpeed  = 1.0; // m/s
     const double kManualAngularSpeed = 1.2; // rad/s
 
     // Check Linear (Forward/Backward)

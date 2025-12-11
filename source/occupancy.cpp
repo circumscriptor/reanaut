@@ -1,3 +1,4 @@
+#include "cloud.hpp"
 #include "constants.hpp"
 #include "laser.hpp"
 #include "occupancy.hpp"
@@ -5,6 +6,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
+#include <optional>
 #include <vector>
 
 namespace reanaut
@@ -16,10 +19,59 @@ OccupancyGrid::OccupancyGrid()
 {
 }
 
+auto OccupancyGrid::isOccupied(Point2 world) const -> bool
+{
+    auto index = worldToGrid(world);
+    if (not index) {
+        return false;
+    }
+    return at(*index) > 0.5;
+}
+
+auto OccupancyGrid::getProbability(Point2 world) const -> std::optional<Real>
+{
+    if (auto index = worldToGrid(world); not index) {
+        return std::nullopt;
+    } else {
+        return 1.0 / (1.0 + std::exp(-at(*index)));
+    }
+}
+
+auto OccupancyGrid::getProbabilitySmooth(Point2 world) const -> std::optional<Real>
+{
+    auto index = worldToGrid(world);
+    if (not index) {
+        return std::nullopt;
+    }
+
+    // almost certain
+    if (at(*index) > (kLogOddsMax / 2.0)) {
+        return 1.0;
+    }
+
+    Real maxLogOdds = std::numeric_limits<Real>::min();
+    for (int dy = -1; dy <= 1; ++dy) {
+        for (int dx = -1; dx <= 1; ++dx) {
+            Index check{
+                .x = index->x + dx,
+                .y = index->y + dy,
+            };
+
+            if (auto value = get(check); value) {
+                if (value > maxLogOdds) {
+                    maxLogOdds = *value;
+                }
+            }
+        }
+    }
+
+    return 0.1 + (0.9 / (1.0 + std::exp(-maxLogOdds))); // NOLINT
+}
+
 void OccupancyGrid::updateFromScans(const Pose& robot, const std::vector<LaserScan>& scans)
 {
-    Index index{};
-    if (not worldToGrid(robot, index)) {
+    auto index = worldToGrid(robot);
+    if (not index) {
         return; // Robot off map
     }
 
@@ -29,16 +81,28 @@ void OccupancyGrid::updateFromScans(const Pose& robot, const std::vector<LaserSc
             continue;
         }
 
-        const Real worldAngle = scan.toWorldAngle(robot.theta);
-
+        const Real   worldAngle = scan.toWorldAngle(robot.theta);
         const Point2 end{
             .x = robot.x + (range * std::cos(worldAngle)),
             .y = robot.y + (range * std::sin(worldAngle)),
         };
 
-        Index endIndex;
-        if (worldToGrid(end, endIndex)) {
-            traceLine(index, endIndex);
+        if (auto endIndex = worldToGrid(end); endIndex) {
+            traceLine(*index, *endIndex);
+        }
+    }
+}
+
+void OccupancyGrid::updateFromCloud(const Pose& robot, const PointCloud& cloud)
+{
+    auto index = worldToGrid(robot);
+    if (not index) {
+        return; // Robot off map
+    }
+
+    for (auto point : cloud.points()) {
+        if (auto endIndex = worldToGrid(point); endIndex) {
+            traceLine(*index, *endIndex);
         }
     }
 }

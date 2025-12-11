@@ -45,8 +45,8 @@ public:
     void setMaxAcceleration(Real linearAccelMax, Real angularAccelMax);
     void stop();
 
-    auto update(const StateType& current, Real dt) -> std::optional<Velocity>;
-    auto update(const Pose& pose, Real dt) -> std::optional<Velocity>;
+    [[nodiscard]] auto update(const StateType& current, Real dt) -> std::optional<Velocity>;
+    [[nodiscard]] auto update(const Pose& pose, Real dt) -> std::optional<Velocity>;
 
 private:
 

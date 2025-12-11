@@ -1,10 +1,12 @@
 #pragma once
 
+#include "cloud.hpp"
 #include "constants.hpp"
 #include "grid.hpp"
 #include "laser.hpp"
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace reanaut
@@ -18,8 +20,13 @@ public:
 
     OccupancyGrid();
 
+    [[nodiscard]] auto isOccupied(Point2 world) const -> bool;
+    [[nodiscard]] auto getProbability(Point2 world) const -> std::optional<Real>;
+    [[nodiscard]] auto getProbabilitySmooth(Point2 world) const -> std::optional<Real>;
+
     // Uses Bresenham's algorithm to clear free space and mark endpoints
     void updateFromScans(const Pose& robot, const std::vector<LaserScan>& scans);
+    void updateFromCloud(const Pose& robot, const PointCloud& cloud);
 
     [[nodiscard]] static auto logOddsToColor(Real logOdds) -> uint32_t;
 

@@ -9,6 +9,8 @@
 namespace reanaut
 {
 
+auto GridBase::inBounds(Index index) const -> bool { return index.x >= 0 && index.x < m_width && index.y >= 0 && index.y < m_height; }
+
 auto GridBase::worldToGrid(Point2 world, Index& index) const -> bool
 {
     if (world.x < m_originX || world.y < m_originY) {
@@ -39,6 +41,16 @@ GridBase::GridBase() : m_width(kMapWidth), m_height(kMapHeight), m_resolution(kM
 Grid::Grid()
 {
     m_grid.resize(size_t(width()) * height(), 0.0); // Initialize to 0 (Unknown probability 0.5)
+}
+
+auto Grid::at(Index index) const -> Real { return m_grid[(size_t(index.y) * width()) + index.x]; }
+
+auto Grid::get(Index index) const -> std::optional<Real>
+{
+    if (not inBounds(index)) {
+        return std::nullopt;
+    }
+    return at(index);
 }
 
 auto Grid::getDistance(const Pose& pose) const -> Real

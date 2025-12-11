@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <numbers>
+#include <optional>
 
 namespace reanaut
 {
@@ -21,6 +22,14 @@ auto LaserScan::toWorldPoint(const Pose& pose) const -> Point2
         .x = pose.x + (dis * std::cos(rot)),
         .y = pose.y + (dis * std::sin(rot)),
     };
+}
+
+auto LaserScan::toWorldPointSafe(const Pose& pose) const -> std::optional<Point2>
+{
+    if (distance < kMinLaserDsitance) {
+        return std::nullopt;
+    }
+    return toWorldPoint(pose);
 }
 
 } // namespace reanaut

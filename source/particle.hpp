@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cloud.hpp"
 #include "constants.hpp"
 #include "laser.hpp"
 #include "occupancy.hpp"
@@ -32,7 +33,8 @@ public:
 
     void init(const Pose& pose);
     void prediction(Real velocity, Real yawRate, Real dt);
-    void updateWeights(const std::vector<LaserScan>& scans, const OccupancyGrid& map);
+    void updateFromScans(const std::vector<LaserScan>& scans, const OccupancyGrid& map);
+    void updateFromCloud(const PointCloud& cloud, const OccupancyGrid& map);
     void resample();
 
     [[nodiscard]] auto getBestEstimate() const -> Particle;

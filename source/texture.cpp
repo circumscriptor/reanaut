@@ -102,4 +102,5 @@ auto TransferTexture::setPixel(int px, int py, uint32_t color) -> bool
     }
     return false;
 }
+
 } // namespace reanaut
