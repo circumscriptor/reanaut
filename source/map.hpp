@@ -1,3 +1,4 @@
+#include "cloud.hpp"
 #include "grid.hpp"
 #include "occupancy.hpp"
 #include "particle.hpp"
@@ -17,6 +18,7 @@ public:
 
     void update(const OccupancyGrid& occupancy);
     void update(const ParticleFilter& filter);
+    void update(const PointCloud& cloud);
 
     void draw(SDL_GPUCommandBuffer* commandBuffer);
 

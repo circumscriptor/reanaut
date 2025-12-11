@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <optional>
 
 namespace reanaut
 {
@@ -16,6 +17,15 @@ auto GridBase::worldToGrid(Point2 world, Index& index) const -> bool
     index.x = static_cast<Index::Type>((world.x - m_originX) / m_resolution);
     index.y = static_cast<Index::Type>((world.y - m_originY) / m_resolution);
     return (index.x >= 0 && index.x < m_width && index.y >= 0 && index.y < m_height);
+}
+
+auto GridBase::worldToGrid(Point2 world) const -> std::optional<Index>
+{
+    Index index;
+    if (worldToGrid(world, index)) {
+        return index;
+    }
+    return std::nullopt;
 }
 
 void GridBase::gridToWorld(Index index, Point2& world) const

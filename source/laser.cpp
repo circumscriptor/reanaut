@@ -11,6 +11,16 @@ auto LaserScan::toMeters() const -> Real { return distance * kScanDistanceToWorl
 
 auto LaserScan::toBeamAngle() const -> Real { return Real(angle) / 180.0 * std::numbers::pi; }
 
-auto LaserScan::toWorldAngle(Real theta) const -> Real { return std::fmod(theta + toBeamAngle(), 2.0 * std::numbers::pi); }
+auto LaserScan::toWorldAngle(Real theta) const -> Real { return std::fmod(theta - toBeamAngle(), 2.0 * std::numbers::pi); }
+
+auto LaserScan::toWorldPoint(const Pose& pose) const -> Point2
+{
+    const auto dis = toMeters();
+    const auto rot = toWorldAngle(pose.theta);
+    return {
+        .x = pose.x + (dis * std::cos(rot)),
+        .y = pose.y + (dis * std::sin(rot)),
+    };
+}
 
 } // namespace reanaut

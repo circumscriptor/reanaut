@@ -38,14 +38,15 @@ public:
 
     [[nodiscard]] auto isActive() const noexcept -> bool;
 
-    void setGoal(Real x, Real y);    // NOLINT(readability-identifier-length)
-    void updateGoal(Real x, Real y); // NOLINT(readability-identifier-length)
+    void setGoal(const Point2& goal);
+    void updateGoal(const Point2& goal);
     void setTolerance(Real distanceTolerance, Real angleTolerance);
     void setMaxSpeeds(Real maxV, Real maxOmega);
     void setMaxAcceleration(Real linearAccelMax, Real angularAccelMax);
     void stop();
 
     auto update(const StateType& current, Real dt) -> std::optional<Velocity>;
+    auto update(const Pose& pose, Real dt) -> std::optional<Velocity>;
 
 private:
 

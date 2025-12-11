@@ -1,3 +1,4 @@
+#include "cloud.hpp"
 #include "constants.hpp"
 #include "map.hpp"
 #include "occupancy.hpp"
@@ -39,6 +40,15 @@ void Map::update(const ParticleFilter& filter)
     Index index;
     if (worldToGrid(bestEstimate, index)) {
         m_texture.setPixel(index.x, index.y, 0xFF00FF00); // NOLINT
+    }
+}
+
+void Map::update(const PointCloud& cloud)
+{
+    for (const auto& point : cloud.points()) {
+        if (auto index = worldToGrid(point); index) {
+            m_texture.setPixel(index->x, index->y, 0xFF00FFFF); // NOLINT
+        }
     }
 }
 

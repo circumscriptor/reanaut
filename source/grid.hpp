@@ -2,6 +2,7 @@
 
 #include "constants.hpp"
 
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -22,6 +23,8 @@ public:
 
     // Convert World (meters) to Grid (index)
     auto worldToGrid(Point2 world, Index& index) const -> bool;
+
+    [[nodiscard]] auto worldToGrid(Point2 world) const -> std::optional<Index>;
 
     // Convert Grid to World (for raycasting check)
     void gridToWorld(Index index, Point2& world) const;

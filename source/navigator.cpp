@@ -41,21 +41,19 @@ Navigator::Navigator(const Gains& translate, const Gains& rotate) : m_translate(
 
 auto Navigator::isActive() const noexcept -> bool { return m_active; }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters,readability-identifier-length)
-void Navigator::setGoal(Real x, Real y)
+void Navigator::setGoal(const Point2& goal)
 {
-    m_targetX = x;
-    m_targetY = y;
+    m_targetX = goal.x;
+    m_targetY = goal.y;
     m_active  = true;
     m_translate.reset();
     m_rotate.reset();
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters,readability-identifier-length)
-void Navigator::updateGoal(Real x, Real y)
+void Navigator::updateGoal(const Point2& goal)
 {
-    m_targetX = x;
-    m_targetY = y;
+    m_targetX = goal.x;
+    m_targetY = goal.y;
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -87,12 +85,17 @@ void Navigator::stop()
 
 auto Navigator::update(const StateType& current, Real dt) -> std::optional<Velocity>
 {
+    return update(Pose({.x = current.x(), .y = current.y()}, current.theta()), dt);
+}
+
+auto Navigator::update(const Pose& pose, Real dt) -> std::optional<Velocity>
+{
     if (not m_active) {
         return std::nullopt;
     }
 
-    const Real dx       = m_targetX - current.x();
-    const Real dy       = m_targetY - current.y();
+    const Real dx       = m_targetX - pose.x;
+    const Real dy       = m_targetY - pose.y;
     const Real distance = std::sqrt((dx * dx) + (dy * dy));
 
     if (distance < m_distanceTolerance) {
@@ -101,7 +104,7 @@ auto Navigator::update(const StateType& current, Real dt) -> std::optional<Veloc
     }
 
     const Real heading      = std::atan2(dy, dx);
-    const Real newOmega     = m_rotate.computeInRange(heading, current.theta(), dt);
+    const Real newOmega     = m_rotate.computeInRange(heading, pose.theta, dt);
     const Real headingError = m_rotate.getError();
     const Real projection   = std::max(std::cos(headingError), 0.0);
     const Real newV         = m_translate.compute(distance, 0.0, dt) * projection; // Projection Scaling

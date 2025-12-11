@@ -23,6 +23,7 @@ struct LaserScan
     [[nodiscard]] auto toMeters() const -> Real;
     [[nodiscard]] auto toBeamAngle() const -> Real;
     [[nodiscard]] auto toWorldAngle(Real theta) const -> Real;
+    [[nodiscard]] auto toWorldPoint(const Pose& pose) const -> Point2;
 };
 
 } // namespace reanaut

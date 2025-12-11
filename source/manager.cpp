@@ -93,17 +93,23 @@ void Manager::update()
         auto result = m_odometry.process(m_feedback, m_time.getDeltaTime());
         if (result) {
             m_filter.prediction(result->linear, result->angular, m_time.getDeltaTime());
+            m_bestEstimate = m_filter.getBestEstimate();
         }
     }
 
     if (m_laser.getLatestSweep(m_scans)) {
+        m_cloud.fromScans(m_bestEstimate, m_scans);
         // _navigation.process_lidar_scans(_full_scan);
-        m_occupancy.updateFromScans({}, m_scans);
+        m_occupancy.updateFromScans(m_bestEstimate, m_scans);
         m_filter.updateWeights(m_scans, m_occupancy);
         m_filter.resample();
         m_map.update(m_occupancy);
         m_map.update(m_filter);
+        m_map.update(m_cloud);
     }
+
+    auto [speed, radius] = m_velocity.computeControl();
+    m_command.baseControl(speed, radius);
 
     // if (m_kobuki.getLatestFeedback(m_feedback)) {
     //     // auto velocity = m_navigator.updconst OccupancyGrid &mapate(m_movement.getState(), m_time.getDeltaTime());
@@ -151,9 +157,51 @@ void Manager::run()
 {
     m_canvas.run([this](SDL_GPUCommandBuffer* commandBuffer) {
         m_ioContext.poll();
+
+        processKeyboard();
+
+        if (ImGui::Begin("Pose")) {
+            ImGui::Text("Position: %f %f", m_bestEstimate.x, m_bestEstimate.y);
+            ImGui::Text("Rotation: %f", m_bestEstimate.theta);
+            ImGui::End();
+        }
+
+        if (ImGui::Begin("Feedback")) {
+            const auto& sensors  = m_feedback.getBasicSensors();
+            const auto& inertial = m_feedback.getInertial();
+            ImGui::Text("Encoder: %d %d", sensors.leftEncoder, sensors.rightEncoder);
+            ImGui::Text("Inertial: %d (%d)", inertial.angle, inertial.angleRate);
+            ImGui::Text("Battery: %d", sensors.battery);
+            ImGui::End();
+        }
+
         m_map.draw(commandBuffer);
     });
     stopMotor();
+}
+
+void Manager::processKeyboard()
+{
+    const double kManualLinearSpeed  = 0.3; // m/s
+    const double kManualAngularSpeed = 1.2; // rad/s
+
+    // Check Linear (Forward/Backward)
+    if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) {
+        m_velocity.linear = kManualLinearSpeed;
+    } else if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow)) {
+        m_velocity.linear = -kManualLinearSpeed;
+    } else {
+        m_velocity.linear = 0.0;
+    }
+
+    // Check Angular (Left/Right)
+    if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow)) {
+        m_velocity.angular = kManualAngularSpeed;
+    } else if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) {
+        m_velocity.angular = -kManualAngularSpeed;
+    } else {
+        m_velocity.angular = 0.0;
+    }
 }
 
 } // namespace reanaut

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "canvas.hpp"
+#include "cloud.hpp"
 #include "connections.hpp"
 #include "kobuki.hpp"
 #include "laser.hpp"
@@ -55,6 +56,7 @@ protected:
     void waitForSignal();
     void scheduleNextUpdate();
     void update();
+    void processKeyboard();
 
 private:
 
@@ -63,6 +65,7 @@ private:
     boost::asio::steady_timer m_timer;
     std::atomic<bool>         m_isPaused{false};
     std::vector<LaserScan>    m_scans;
+    Velocity                  m_velocity;
 
     Canvas           m_canvas;
     KobukiConnection m_kobuki;
@@ -75,6 +78,8 @@ private:
     Map              m_map;
     Odometry         m_odometry;
     ParticleFilter   m_filter;
+    Particle         m_bestEstimate;
+    PointCloud       m_cloud;
     // camera _camera_receiver;
     // Movement         m_movement;
 };
