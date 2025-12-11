@@ -35,6 +35,7 @@ Manager::Manager(const Options& options)
 
     m_filter.init({});
     // _movement.set_target(DEFAULT_NAVIGATE_TO_X, DEFAULT_NAVIGATE_TO_Y);
+    m_tangentBug.setDestination(1, 0);
 }
 
 void Manager::waitForSignal()
@@ -150,7 +151,8 @@ void Manager::update()
     //     m_command.baseControl(0, 0);
     // }
 
-    auto [speed, radius] = m_velocity.computeControl();
+    // auto [speed, radius] = m_velocity.computeControl();
+    auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime());
 
     // Safety
     static bool s_informed       = false;

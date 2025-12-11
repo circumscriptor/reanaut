@@ -11,6 +11,7 @@
 #include "navigator.hpp"
 #include "occupancy.hpp"
 #include "particle.hpp"
+#include "tangent_bug.hpp"
 #include "time.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -90,6 +91,7 @@ private:
     GridImage                      m_image;
     TurboUberSuperDetector         m_detector;
     TurboUberSuperDetector::Params m_detectorParams;
+    TangentBug                     m_tangentBug;
     // camera _camera_receiver;
     // Movement         m_movement;
 };
