@@ -48,7 +48,7 @@ public:
     LaserConnection(boost::asio::io_context& ioContext, uint16_t port, const std::string& robotIp, uint16_t robotPort);
 
     [[nodiscard]]
-    auto getLatestSweep() const -> std::span<const LaserScan>;
+    auto getLastSweep() const -> std::span<const LaserScan>;
     auto getLatestSweep(std::vector<LaserScan>& scan) -> bool;
     void asyncRecv();
 

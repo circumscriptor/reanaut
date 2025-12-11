@@ -7,6 +7,7 @@
 #include "map.hpp"
 #include "movement.hpp"
 #include "navigator.hpp"
+#include "occupancy.hpp"
 #include "time.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -59,7 +60,7 @@ private:
     boost::asio::io_context   m_ioContext;
     boost::asio::signal_set   m_signals;
     boost::asio::steady_timer m_timer;
-    std::atomic<bool>         m_isPaused{true};
+    std::atomic<bool>         m_isPaused{false};
     std::vector<LaserScan>    m_scans;
 
     Canvas           m_canvas;
@@ -70,6 +71,7 @@ private:
     Time             m_time;
     Movement         m_movement;
     Navigator        m_navigator;
+    OccupancyGrid    m_occupancy;
     Map              m_map;
     // camera _camera_receiver;
 };

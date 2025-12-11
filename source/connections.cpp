@@ -92,7 +92,7 @@ LaserConnection::LaserConnection(boost::asio::io_context& ioContext, uint16_t po
     });
 }
 
-auto LaserConnection::getLatestSweep() const -> std::span<const LaserScan> { return m_scans; }
+auto LaserConnection::getLastSweep() const -> std::span<const LaserScan> { return m_scans; }
 
 auto LaserConnection::getLatestSweep(std::vector<LaserScan>& scan) -> bool
 {
@@ -117,7 +117,7 @@ void LaserConnection::handleReceive(const boost::system::error_code& error, std:
         return;
     }
 
-    if (!error && bytesTransferred > 0) {
+    if (not error && bytesTransferred > 0) {
         const size_t count = bytesTransferred / sizeof(LaserScan);
         m_scans.resize(count);
         std::memcpy(m_scans.data(), m_recvBuffer.data(), bytesTransferred);

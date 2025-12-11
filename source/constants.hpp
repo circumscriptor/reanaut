@@ -65,7 +65,7 @@ static constexpr uint32_t  kWeightThresholdLower        = 3;
 static constexpr uint32_t  kWeightThresholdUpper        = 3;
 
 // Robot/Sensor Specs
-const double kLidarMaxRange = 10.0;
+const double kLidarMaxRange = 20.0;
 const double kLidarMinRange = 0.1;
 const double kMapResolution = 0.05;  // 5cm per cell
 const int    kMapWidth      = 400;   // 20 meters wide
@@ -100,6 +100,14 @@ struct Point2
 struct Pose : Point2
 {
     Real theta{};
+};
+
+struct Index
+{
+    using Type = int;
+
+    Type x{};
+    Type y{};
 };
 
 } // namespace reanaut

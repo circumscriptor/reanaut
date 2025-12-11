@@ -23,6 +23,8 @@ public:
     [[nodiscard]] auto pixels() -> std::span<uint32_t> { return m_pixels; }
     [[nodiscard]] auto pixels() const -> std::span<const uint32_t> { return m_pixels; }
 
+    auto setPixel(int px, int py, uint32_t color) -> bool;
+
     auto upload(SDL_GPUCommandBuffer* commandBuffer) -> bool;
 
 protected:

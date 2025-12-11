@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <random>
+#include <span>
 #include <vector>
 
 namespace reanaut
@@ -30,11 +31,13 @@ public:
     ParticleFilter(uint32_t seed);
 
     void init(const Pose& pose);
-    void prediction(double velocity, double yawRate, double dt);
+    void prediction(Real velocity, Real yawRate, Real dt);
     void updateWeights(const std::vector<LaserScan>& scans, const OccupancyGrid& map);
     void resample();
 
     auto getBestEstimate() -> Particle;
+
+    [[nodiscard]] auto particles() const -> std::span<const Particle> { return m_particles; }
 
 protected:
 

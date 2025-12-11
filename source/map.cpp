@@ -1,6 +1,7 @@
 #include "constants.hpp"
 #include "map.hpp"
 #include "occupancy.hpp"
+#include "particle.hpp"
 
 #include <SDL3/SDL_gpu.h>
 #include <imgui.h>
@@ -21,6 +22,16 @@ void Map::update(const OccupancyGrid& occupancy)
     const size_t size = std::min(grid.size(), map.size());
     for (size_t i = 0; i < size; ++i) {
         map[i] = OccupancyGrid::logOddsToColor(grid[i]);
+    }
+}
+
+void Map::update(const ParticleFilter& filter)
+{
+    for (const auto& particle : filter.particles()) {
+        Index index;
+        if (worldToGrid(particle, index)) {
+            m_texture.setPixel(index.x, index.y, 0xFF0000FF); // NOLINT
+        }
     }
 }
 

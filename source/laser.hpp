@@ -11,10 +11,10 @@ static constexpr size_t kMaxLaserScans = 1000;
 
 struct LaserScan
 {
-    uint32_t quality;
-    float    angleDeg;
-    float    distanceMm;
-    uint32_t timestamp;
+    uint32_t quality;   //!< ?
+    float    angle;     //!< 0-360 [deg]
+    float    distance;  //!< 0=out-of-range [mm]
+    uint32_t timestamp; //!< ?
 };
 
 } // namespace reanaut

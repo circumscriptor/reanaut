@@ -25,7 +25,7 @@ void ParticleFilter::init(const Pose& pose)
     }
 }
 
-void ParticleFilter::prediction(double velocity, double yawRate, double dt)
+void ParticleFilter::prediction(Real velocity, Real yawRate, Real dt)
 {
     for (auto& particle : m_particles) {
         if (std::fabs(yawRate) < kYawTolerance) {
@@ -45,22 +45,22 @@ void ParticleFilter::prediction(double velocity, double yawRate, double dt)
 
 void ParticleFilter::updateWeights(const std::vector<LaserScan>& scans, const OccupancyGrid& map)
 {
-    double maxWeight = 0.0;
+    Real maxWeight = 0.0;
 
     for (auto& particle : m_particles) {
-        double weight = 1.0;
+        Real weight = 1.0;
 
         for (const auto& scan : scans) {
-            const double obs = scan.distanceMm * 0.001;
+            const Real obs = scan.distance * 0.001;
             if (obs > kLidarMaxRange || obs < kLidarMinRange) {
                 continue;
             }
 
-            const double beamAngle  = scan.angleDeg * std::numbers::pi / 180.0;
-            const double worldAngle = std::fmod(particle.theta + beamAngle, std::numbers::pi);
+            const Real beamAngle  = scan.angle * std::numbers::pi / 180.0;
+            const Real worldAngle = std::fmod(particle.theta + beamAngle, std::numbers::pi);
 
             // Raycast against the Occupancy Grid
-            const double pred = map.getDistance({
+            const Real pred = map.getDistance({
                 {.x = particle.x, .y = particle.y},
                 worldAngle
             });
@@ -82,7 +82,6 @@ void ParticleFilter::updateWeights(const std::vector<LaserScan>& scans, const Oc
 void ParticleFilter::resample()
 {
     // Generate weight vector for distribution
-
     m_weights.clear();
     m_weights.reserve(kNumParticles);
     for (const auto& particle : m_particles) {
@@ -103,10 +102,10 @@ void ParticleFilter::resample()
 
 auto ParticleFilter::getBestEstimate() -> Particle
 {
-    double pX     = 0;
-    double pY     = 0;
-    double cosSum = 0;
-    double sinSum = 0;
+    Real pX     = 0;
+    Real pY     = 0;
+    Real cosSum = 0;
+    Real sinSum = 0;
 
     for (const auto& particle : m_particles) {
         pX += particle.x;

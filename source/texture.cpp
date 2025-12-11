@@ -94,4 +94,12 @@ auto TransferTexture::uploadToGPUTexture(SDL_GPUCommandBuffer* commandBuffer) ->
     return true;
 }
 
+auto TransferTexture::setPixel(int px, int py, uint32_t color) -> bool
+{
+    if (px >= 0 && uint32_t(px) <= m_width && py >= 0 && uint32_t(py) <= m_height) {
+        m_pixels[size_t(py * m_width) + px] = color;
+        return true;
+    }
+    return false;
+}
 } // namespace reanaut

@@ -48,6 +48,7 @@ void Manager::scheduleNextUpdate()
     m_timer.async_wait([this](const boost::system::error_code& error) {
         if (error.value() == boost::asio::error::operation_aborted) {
             m_canvas.close();
+            std::println("update timer aborted");
             return; // cancelled, stop
         }
         update();
@@ -84,6 +85,8 @@ void Manager::update()
 
     if (m_laser.getLatestSweep(m_scans)) {
         // _navigation.process_lidar_scans(_full_scan);
+        m_occupancy.updateFromScans({}, m_scans);
+        m_map.update(m_occupancy);
     }
 
     if (m_kobuki.getLatestFeedback(m_feedback)) {

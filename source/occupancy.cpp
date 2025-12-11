@@ -1,9 +1,9 @@
 #include "constants.hpp"
+#include "laser.hpp"
 #include "occupancy.hpp"
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <numbers>
 #include <vector>
@@ -12,78 +12,27 @@ namespace reanaut
 {
 
 OccupancyGrid::OccupancyGrid()
-    : m_width(kMapWidth), m_height(kMapHeight), m_resolution(kMapResolution), //
-      m_originX(kMapOriginX), m_originY(kMapOriginY),                         //
-      m_loOccInc(std::log(kLogOddsOccupied / (1.0 - kLogOddsOccupied))),      //
+    : m_loOccInc(std::log(kLogOddsOccupied / (1.0 - kLogOddsOccupied))), //
       m_loFreeInc(std::log(kLogOddsFree / (1.0 - kLogOddsFree)))
 {
-    m_grid.resize(size_t(m_width) * m_height, 0.0); // Initialize to 0 (Unknown probability 0.5)
 }
 
-auto OccupancyGrid::worldToGrid(Point2 world, Index& index) const -> bool
-{
-    if (world.x < m_originX || world.y < m_originY) {
-        return false;
-    }
-    index.x = static_cast<int>((world.x - m_originX) / m_resolution);
-    index.y = static_cast<int>((world.y - m_originY) / m_resolution);
-    return (index.x >= 0 && index.x < m_width && index.y >= 0 && index.y < m_height);
-}
-
-void OccupancyGrid::gridToWorld(Index index, Point2& world) const
-{
-    world.x = m_originX + (index.x + 0.5) * m_resolution;
-    world.y = m_originY + (index.y + 0.5) * m_resolution;
-}
-
-auto OccupancyGrid::getDistance(const Pose& pose) const -> Real
-{
-    const Real stepSize = m_resolution;
-    const Real maxDist  = kLidarMaxRange;
-
-    Real currDist = 0.0;
-
-    const Real dx = std::cos(pose.theta);
-    const Real dy = std::sin(pose.theta);
-
-    // Simple stepping raycast (faster than Bresenham for readout)
-    while (currDist < maxDist) {
-        const Point2 check{
-            .x = pose.x + (dx * currDist),
-            .y = pose.y + (dy * currDist),
-        };
-
-        Index index{};
-        if (not worldToGrid(check, index)) {
-            return maxDist; // Out of bounds is "open space" or max range
-        }
-
-        // If log odds > 0, it's likely occupied
-        if (m_grid[size_t(index.y * m_width) + index.x] > 2.0) { // Threshold 2.0 for "confident obstacle"
-            return currDist;
-        }
-        currDist += stepSize;
-    }
-    return maxDist;
-}
-
-void OccupancyGrid::updateFromScans(const Pose& robot, const std::vector<Real>& scans)
+void OccupancyGrid::updateFromScans(const Pose& robot, const std::vector<LaserScan>& scans)
 {
     Index index{};
     if (not worldToGrid(robot, index)) {
         return; // Robot off map
     }
 
-    const Real angleStep = (2.0 * std::numbers::pi) / Real(scans.size());
+    for (auto scan : scans) {
+        const Real range = scan.distance * 0.001;
 
-    for (size_t i = 0; i < scans.size(); ++i) {
-        const Real range = scans[i];
         // Filter invalid ranges
         if (range < kLidarMinRange || range >= kLidarMaxRange) {
             continue;
         }
 
-        const Real beamAngle  = -std::numbers::pi + (Real(i) * angleStep);
+        const Real beamAngle  = Real(scan.angle) / 180.0 * std::numbers::pi;
         const Real worldAngle = std::fmod(robot.theta + beamAngle, 2.0 * std::numbers::pi);
 
         const Point2 end{
@@ -126,16 +75,6 @@ void OccupancyGrid::traceLine(Index index0, Index index1)
             err += dx;
             index0.y += sy;
         }
-    }
-}
-
-void OccupancyGrid::updateCell(Index index, Real change)
-{
-    int idx = (index.y * m_width) + index.x;
-    if (idx >= 0 && idx < int(m_grid.size())) {
-        m_grid[idx] += change;
-        // Clamp values to prevent overconfidence/underflow
-        m_grid[idx] = std::clamp(m_grid[idx], kLogOddsMin, kLogOddsMax);
     }
 }
 
