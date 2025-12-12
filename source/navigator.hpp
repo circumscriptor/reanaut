@@ -37,6 +37,7 @@ public:
     Navigator(const Gains& translate, const Gains& rotate);
 
     [[nodiscard]] auto isActive() const noexcept -> bool;
+    [[nodiscard]] auto targetReached() const noexcept -> bool;
 
     void setGoal(const Point2& goal);
     void updateGoal(const Point2& goal);
@@ -56,6 +57,7 @@ private:
     Real m_targetX{};
     Real m_targetY{};
     bool m_active{};
+    bool m_targetReached{false};
 
     Real m_distanceTolerance{kDefaultDistanceTolerance};
     Real m_angleTolerance{kDefaultAngleTolerance};

@@ -53,9 +53,14 @@ private:
     [[nodiscard]] static auto lengthSq(double x, double y) noexcept -> double { return (x * x) + (y * y); }
     [[nodiscard]] static auto length(double x, double y) noexcept -> double { return std::sqrt(lengthSq(x, y)); }
     [[nodiscard]] static auto distanceSq(double x1, double y1, double x2, double y2) noexcept -> double { return lengthSq(x2 - x1, y2 - y1); }
+    [[nodiscard]] static auto distance(Point2 A, Point2 B) noexcept -> double { return distance(A.x,A.y,B.x,B.y); }
     [[nodiscard]] static auto distance(double x1, double y1, double x2, double y2) noexcept -> double { return std::sqrt(distanceSq(x1, y1, x2, y2)); }
 
     [[nodiscard]] auto isPathToDestinationClear(const std::vector<LaserScan>& measurement) const -> bool;
+
+    auto map(auto x, auto in_min, auto in_max, auto out_min, auto out_max) { return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min; }
+
+    auto angleToTarget(Point2 location) -> double;
 
 }; // namespace reanaut
 } // namespace reanaut

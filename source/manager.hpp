@@ -76,7 +76,7 @@ private:
     Velocity                  m_velocity;
     size_t                    m_skippedFeedbackCounter{};
     size_t                    m_skippedLaserScanCounter{};
-    bool                      m_enableMapGradient{};
+    bool                      m_enableMapGradient{true};
     bool                      m_enableVisualizeFilter{};
     bool                      m_enableVisualizeCloud{};
     bool                      m_useManualNavigation{true};

@@ -174,6 +174,7 @@ void Manager::update()
 
     // auto [speed, radius] = m_velocity.computeControl();
     auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime());
+    std::println("[Manager] tangentbug returned: speed={}, radius={}", speed, radius);
 
     // Safety
     static bool s_informed       = false;

@@ -41,11 +41,15 @@ Navigator::Navigator(const Gains& translate, const Gains& rotate) : m_translate(
 
 auto Navigator::isActive() const noexcept -> bool { return m_active; }
 
+auto Navigator::targetReached() const noexcept -> bool { return m_targetReached; }
+
+
 void Navigator::setGoal(const Point2& goal)
 {
     m_targetX = goal.x;
     m_targetY = goal.y;
     m_active  = true;
+    m_targetReached = false;
     m_translate.reset();
     m_rotate.reset();
 }
@@ -100,6 +104,7 @@ auto Navigator::update(const Pose& pose, Real dt) -> std::optional<Velocity>
 
     if (distance < m_distanceTolerance) {
         m_active = false;
+        m_targetReached = true;
         return std::nullopt;
     }
 
