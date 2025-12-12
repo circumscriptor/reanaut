@@ -23,6 +23,7 @@
 
 namespace reanaut
 {
+
 TangentBug::TangentBug() : m_pointFollower({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}) {};
 
 auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosition, RealType dt) -> std::pair<uint16_t, uint16_t>
@@ -142,8 +143,8 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                 robotSpeed.angular = rotationSpeed toRad;
 
                 // --- MAINTAIN SPEED (dist_error adjust forward speed based on distance) ---
-                double distFrontLidar = findShortestMeasurementInRange(scans, -20, 20).distance -400;
-                distFrontLidar        = std::clamp(distFrontLidar, 0.0, 200.0);
+                double distFrontLidar         = findShortestMeasurementInRange(scans, -20, 20).distance - 400;
+                distFrontLidar                = std::clamp(distFrontLidar, 0.0, 200.0);
                 auto distFrontLidarMultiplier = map(distFrontLidar, 0, 200, 0.05, 1);
                 std::println("\t[Tangentbug] distFrontLidarMultiplier: {:.2f}", distFrontLidarMultiplier);
 
@@ -220,4 +221,5 @@ auto TangentBug::angleToTarget(Point2 location) -> double
 
     return angleDeg;
 }
+
 } // namespace reanaut

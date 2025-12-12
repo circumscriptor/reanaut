@@ -95,8 +95,8 @@ void CameraTexture::draw(SDL_GPUCommandBuffer* commandBuffer)
         const ImVec2 size = ImGui::GetContentRegionAvail();
         if (size.x > 0 && size.y > 0 && width() > 0 && height() > 0) {
 
-            float aspectWindow = size.x / size.y;
-            float aspectImage  = static_cast<float>(width()) / static_cast<float>(height());
+            const float aspectWindow = size.x / size.y;
+            const float aspectImage  = static_cast<float>(width()) / static_cast<float>(height());
 
             ImVec2 imageSize;
             if (aspectWindow > aspectImage) {
@@ -109,15 +109,17 @@ void CameraTexture::draw(SDL_GPUCommandBuffer* commandBuffer)
                 imageSize.y = imageSize.x / aspectImage;
             }
 
-            const float  xOffset = (size.x - imageSize.x) * 0.5F;
-            const float  yOffset = (size.y - imageSize.y) * 0.5F;
-            const ImVec2 cursor  = ImGui::GetCursorPos();
+            const float  xOffset      = (size.x - imageSize.x) * 0.5F;
+            const float  yOffset      = (size.y - imageSize.y) * 0.5F;
+            const ImVec2 cursor       = ImGui::GetCursorPos();
+            const ImVec2 screenCursor = ImGui::GetCursorScreenPos();
             const ImVec2 pos(cursor.x + xOffset, cursor.y + yOffset);
             ImGui::SetCursorPos(pos);
             ImGui::Image((ImTextureID)texture(), imageSize);
 
-            ImDrawList* drawList = ImGui::GetWindowDrawList();
-            drawList->AddRect(pos, ImVec2(pos.x + imageSize.x, pos.y + imageSize.y), IM_COL32(255, 0, 255, 255), 0.0F, 0, 2.0F);
+            const ImVec2 screenPos(screenCursor.x + xOffset, screenCursor.y + yOffset);
+            ImDrawList*  drawList = ImGui::GetWindowDrawList();
+            drawList->AddRect(screenPos, ImVec2(screenPos.x + imageSize.x, screenPos.y + imageSize.y), IM_COL32(255, 0, 255, 255), 0.0F, 0, 2.0F);
         }
 
         // const float vw = ImGui::GetContentRegionAvail().x;

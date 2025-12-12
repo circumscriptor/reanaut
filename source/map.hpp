@@ -29,7 +29,7 @@ public:
     void update(const ElevationGrid& elevation);
     void update(const ParticleFilter& filter, Real resolution, bool enableFilter);
     void update(const PointCloud& cloud);
-    void update(const TurboUberSuperDetector& detector, Real resolution);
+    void update(const TurboUberSuperDetector& detector, Real resolution, bool enable);
 
     void draw(SDL_GPUCommandBuffer* commandBuffer);
 

@@ -23,9 +23,9 @@ namespace reanaut
 {
 
 Manager::Manager(const Options& options)
-    : m_signals(m_ioContext, SIGINT, SIGTERM),                                                  // Listen for Ctrl+C and termination signals
-      m_timer(m_ioContext),                                                                     //
-      m_cameraTimer(m_ioContext),                                                               //
+    : m_ioContext(3), m_signals(m_ioContext, SIGINT, SIGTERM),                                  // Listen for Ctrl+C and termination signals
+      m_timer(boost::asio::make_strand(m_ioContext)),                                           //
+      m_cameraTimer(boost::asio::make_strand(m_ioContext)),                                     //
       m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort), //
       m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort),    //
       m_navigator({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}), //
@@ -149,9 +149,7 @@ void Manager::update()
         // _navigation.process_lidar_scans(_full_scan);
 
         m_detector.extractObstacles(m_image, m_detectorParams);
-        if (m_enableVisualizeObstacles) {
-            m_map.update(m_detector, m_image.resolution());
-        }
+        m_map.update(m_detector, m_image.resolution(), m_enableVisualizeObstacles);
     } else {
         ++m_skippedLaserScanCounter;
         // scheduleNextUpdate();
@@ -230,7 +228,7 @@ void Manager::run()
             const auto& inertial = m_feedback.getInertial();
             ImGui::Text("Encoder: %d %d", sensors.leftEncoder, sensors.rightEncoder);
             ImGui::Text("Inertial: %d (%d)", inertial.angle, inertial.angleRate);
-            ImGui::Text("Battery: %d", sensors.battery);
+            ImGui::Text("Battery: %.2f V", (sensors.battery * 0.1)); // NOLINT
         }
         ImGui::End();
 

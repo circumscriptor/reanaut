@@ -86,25 +86,27 @@ void Map::update(const PointCloud& cloud)
     }
 }
 
-void Map::update(const TurboUberSuperDetector& detector, Real resolution)
+void Map::update(const TurboUberSuperDetector& detector, Real resolution, bool enable)
 {
     m_obstacles.clear();
     // m_obstacles.reserve(detector.obstacles().size());
 
-    // Convert World Polygons to Grid Coordinates (ImVec2) for rendering
-    m_obstacles.resize(detector.obstacles().size());
-    size_t counter = 0;
-    for (const auto& poly : detector.obstacles()) {
-        auto& gridPoly = m_obstacles[counter++];
+    if (enable) {
+        // Convert World Polygons to Grid Coordinates (ImVec2) for rendering
+        m_obstacles.resize(detector.obstacles().size());
+        size_t counter = 0;
+        for (const auto& poly : detector.obstacles()) {
+            auto& gridPoly = m_obstacles[counter++];
 
-        gridPoly.clear();
-        for (size_t i = 0; i < poly.size(); ++i) {
-            Point2 pt = poly.getVertex(i);
+            gridPoly.clear();
+            for (size_t i = 0; i < poly.size(); ++i) {
+                Point2 pt = poly.getVertex(i);
 
-            // Transform World -> Grid Index (Float)
-            // Assuming origin is (0,0). If OccupancyGrid has an origin offset,
-            // you should subtract it here: (pt.x - origin.x) / resolution
-            gridPoly.emplace_back(static_cast<float>(pt.x / resolution), static_cast<float>(pt.y / resolution));
+                // Transform World -> Grid Index (Float)
+                // Assuming origin is (0,0). If OccupancyGrid has an origin offset,
+                // you should subtract it here: (pt.x - origin.x) / resolution
+                gridPoly.emplace_back(static_cast<float>(pt.x / resolution), static_cast<float>(pt.y / resolution));
+            }
         }
     }
 }
