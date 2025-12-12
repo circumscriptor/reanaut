@@ -37,11 +37,11 @@ auto Polygon::getWallFollowVector(Point2 robotPos, bool ccw) const -> Point2
     }
 
     // Calculate direction of the closest edge
-    const auto [p1, p2] = getEdge(bestIdx);
-    Point2 edgeVec      = p2 - p1;
+    const auto [p1, p2]  = getEdge(bestIdx);
+    const Point2 edgeVec = p2 - p1;
 
     const Real len = edgeVec.length();
-    if (len < 1e-6) {
+    if (len < 1e-6) { // NOLINT
         return {
             .x = 0,
             .y = 0,
@@ -112,4 +112,5 @@ auto Polygon::distancePointToSegment(Point2 pp, Point2 pa, Point2 pb) -> Real
     const Point2 projection = {.x = pa.x + (st * ab.x), .y = pa.y + (st * ab.y)};
     return pp.distance(projection);
 }
+
 } // namespace reanaut

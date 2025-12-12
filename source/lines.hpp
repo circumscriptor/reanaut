@@ -2,6 +2,7 @@
 
 #include "constants.hpp"
 #include "occupancy.hpp"
+#include "polygon.hpp"
 
 #include <opencv2/core/cvdef.h>
 #include <opencv2/core/mat.hpp>
@@ -86,9 +87,9 @@ public:
     //     }
     // }
 
-    [[nodiscard]] auto lines() const -> std::span<const LineSegment> { return m_segments; }
+    [[nodiscard]] auto obstacles() const -> std::span<const Polygon> { return m_obstacles; }
 
-    void extractSegments(const GridImage& image, const Params& params);
+    void extractObstacles(const GridImage& image, const Params& params);
 
 protected:
 
@@ -110,7 +111,7 @@ protected:
 
 private:
 
-    std::vector<LineSegment>            m_segments;
+    std::vector<Polygon>                m_obstacles;
     std::vector<cv::Vec4i>              m_lines;
     std::vector<cv::Point>              m_approx;
     std::vector<std::vector<cv::Point>> m_contours;

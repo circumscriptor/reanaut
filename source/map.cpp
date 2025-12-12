@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <vector>
 
 namespace reanaut
 {
@@ -68,11 +69,24 @@ void Map::update(const PointCloud& cloud)
 
 void Map::update(const TurboUberSuperDetector& detector, Real resolution)
 {
-    m_lines.clear();
-    m_lines.reserve(detector.lines().size());
-    for (const auto& line : detector.lines()) {
-        m_lines.emplace_back(ImVec2(float(line.start.x / resolution), float(line.start.y / resolution)), //
-                             ImVec2(float(line.end.x / resolution), float(line.end.y / resolution)));
+    m_obstacles.clear();
+    m_obstacles.reserve(detector.obstacles().size());
+
+    // Convert World Polygons to Grid Coordinates (ImVec2) for rendering
+    m_obstacles.resize(detector.obstacles().size());
+    size_t counter = 0;
+    for (const auto& poly : detector.obstacles()) {
+        auto& gridPoly = m_obstacles[counter++];
+
+        gridPoly.clear();
+        for (size_t i = 0; i < poly.size(); ++i) {
+            Point2 pt = poly.getVertex(i);
+
+            // Transform World -> Grid Index (Float)
+            // Assuming origin is (0,0). If OccupancyGrid has an origin offset,
+            // you should subtract it here: (pt.x - origin.x) / resolution
+            gridPoly.emplace_back(static_cast<float>(pt.x / resolution), static_cast<float>(pt.y / resolution));
+        }
     }
 }
 
@@ -98,10 +112,34 @@ void Map::draw(SDL_GPUCommandBuffer* commandBuffer)
 
     const auto scale = side / float(m_texture.width());
 
-    for (const auto& [p1, p2] : m_lines) {
-        const ImVec2 ip1(pos.x + (side * 0.5F) + (p1.x * scale), pos.y + (side * 0.5F) + (p1.y * scale));
-        const ImVec2 ip2(pos.x + (side * 0.5F) + (p2.x * scale), pos.y + (side * 0.5F) + (p2.y * scale));
-        drawList->AddLine(ip1, ip2, IM_COL32(255, 128, 128, 255), 2.0F);
+    // for (const auto& [p1, p2] : m_lines) {
+    //     const ImVec2 ip1(pos.x + (side * 0.5F) + (p1.x * scale), pos.y + (side * 0.5F) + (p1.y * scale));
+    //     const ImVec2 ip2(pos.x + (side * 0.5F) + (p2.x * scale), pos.y + (side * 0.5F) + (p2.y * scale));
+    //     drawList->AddLine(ip1, ip2, IM_COL32(255, 128, 128, 255), 2.0F);
+    // }
+
+    // Render Polygons
+    for (const auto& poly : m_obstacles) {
+        if (poly.empty()) {
+            continue;
+        }
+
+        // Transform cached Grid coordinates to Screen coordinates for this frame
+        // We do this here so it responds to window resizing/movement correctly
+        m_screenPoints.clear();
+        m_screenPoints.reserve(poly.size());
+
+        for (const auto& gridPt : poly) {
+            m_screenPoints.emplace_back(pos.x + (side * 0.5F) + (gridPt.x * scale), pos.y + (side * 0.5F) + (gridPt.y * scale));
+        }
+
+        // Draw Closed Polyline (Thick Yellow)
+        drawList->AddPolyline(m_screenPoints.data(), static_cast<int>(m_screenPoints.size()), IM_COL32(255, 255, 0, 255), ImDrawFlags_Closed, 2.0F);
+
+        // Draw Vertices (Red Dots) to visualize corners
+        for (const auto& point : m_screenPoints) {
+            drawList->AddCircleFilled(point, 3.0F, IM_COL32(255, 0, 0, 255)); // NOLINT
+        }
     }
 
     ImGui::End();

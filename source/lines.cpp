@@ -1,5 +1,5 @@
 #include "constants.hpp"
-#include "lines.hpp"
+#include "lines.hpp" // Ensure this header now defines 'struct Polygon'
 #include "occupancy.hpp"
 
 #include <opencv2/core/hal/interface.h>
@@ -9,7 +9,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <print>
 #include <vector>
 
 namespace reanaut
@@ -23,76 +22,91 @@ void GridImage::update(const OccupancyGrid& grid)
     m_origin     = grid.origin();
 
     // Note: cv::Mat is row-major.
-    uint8_t* rowPtr;
-    for (int y = 0; y < grid.height(); ++y) {
-        rowPtr = m_image.ptr<uint8_t>(y);
-        for (int x = 0; x < grid.width(); ++x) {
-            Index idx{.x = x, .y = y};
+    // Optimization: Get the raw data pointer for the whole block if continuous
+    if (m_image.isContinuous()) {
+        const auto numPixels = static_cast<const size_t>(grid.width()) * grid.height();
+        auto*      pixelPtr  = m_image.ptr<uint8_t>(0);
 
-            // If get() returns nullopt (out of bounds), we treat as free.
+        for (size_t i = 0; i < numPixels; ++i) {
+            // We map linear index back to grid coordinates for the 'get' check
+            // (Only needed if 'get' relies strictly on x/y struct)
+            // If OccupancyGrid has linear access, this could be even faster.
+            Index idx{.x = static_cast<int>(i % grid.width()), .y = static_cast<int>(i / grid.width())};
+
             if (auto val = grid.get(idx); val && OccupancyGrid::logOddsNormalize(*val) > 0.5) {
-                rowPtr[x] = 255; // Occupied NOLINT
+                pixelPtr[i] = 255; // Occupied NOLINT
             } else {
-                rowPtr[x] = 0; // Free
+                pixelPtr[i] = 0; // Free
+            }
+        }
+    } else {
+        // Fallback for non-continuous memory (rare for fresh create())
+        for (int y = 0; y < grid.height(); ++y) {
+            auto* rowPtr = m_image.ptr<uint8_t>(y);
+            for (int x = 0; x < grid.width(); ++x) {
+                Index idx{.x = x, .y = y};
+                if (auto val = grid.get(idx); val && OccupancyGrid::logOddsNormalize(*val) > 0.5) {
+                    rowPtr[x] = 255; // NOLINT
+                } else {
+                    rowPtr[x] = 0;
+                }
             }
         }
     }
 }
 
-void TurboUberSuperDetector::extractSegments(const GridImage& image, const Params& params)
+void TurboUberSuperDetector::extractObstacles(const GridImage& image, const Params& params)
 {
-    m_lines.clear();
+    // 1. Prepare
+    m_obstacles.clear(); // This is now std::vector<Polygon>
 
+    // We clone because findContours modifies the source image
     cv::Mat processingMap = image.mat().clone();
-    // cv::Mat kernel        = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
 
-    // Remove salt-and-pepper noise (Speckles)
-    // cv::morphologyEx(processingMap, processingMap, cv::MORPH_OPEN, kernel);
-    // Fill small holes/gaps in walls
-    // cv::morphologyEx(processingMap, processingMap, cv::MORPH_CLOSE, kernel);
-
+    // 2. Find Contours
     m_contours.clear();
-    // B. Find Contours
-    // RETR_LIST: Get all contours (don't care about hierarchy)
-    // CHAIN_APPROX_SIMPLE: Compresses horizontal/vertical segments
-    cv::findContours(processingMap, m_contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+    // RETR_EXTERNAL: We only care about the outer hull of obstacles for navigation.
+    // CHAIN_APPROX_SIMPLE: Compresses horizontal/vertical segments (memory optimization).
+    cv::findContours(processingMap, m_contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    // C. Simplify & Store
+    // 3. Process & Simplify
+    m_approx.clear(); // Reusable buffer
+
+    const Real   resolution = image.resolution();
+    const Point2 origin     = image.origin();
+
     for (const auto& contour : m_contours) {
-        // Filter out tiny noise blobs (e.g. less than 15 pixels area)
+        // Filter out tiny noise blobs
         if (cv::contourArea(contour) < params.minArea) {
             continue;
         }
 
-        m_approx.clear();
-        // Ramer-Douglas-Peucker algorithm
-        // epsilon: Maximum distance from original curve to simplified line.
-        // Smaller = follows grid jaggedness (staircase). Larger = smoother lines.
-        // 2.0 pixels is usually a good sweet spot for grid maps.
+        // Ramer-Douglas-Peucker simplification
+        // epsilon ~ 1.0 to 2.0 ensures we keep the general shape without pixel-stepping artifacts
         cv::approxPolyDP(contour, m_approx, params.epsilon, true);
 
-        // Convert the polygon loop into individual line segments for rendering
-        for (size_t i = 0; i < m_approx.size(); ++i) {
-            cv::Point p1 = m_approx[i];
-            cv::Point p2 = m_approx[(i + 1) % m_approx.size()]; // Wrap around to close loop
-
-            // Store as Vec4i [x1, y1, x2, y2]
-            m_lines.emplace_back(p1.x, p1.y, p2.x, p2.y);
+        // We need at least 3 points to form a closed polygon (triangle).
+        // If walls can be single thin lines (2 points), change to >= 2.
+        if (m_approx.size() < 3) {
+            continue;
         }
+
+        // Convert OpenCV points (Grid Pixels) -> reanaut::Point2 (World Meters)
+        std::vector<Point2> worldVertices;
+        worldVertices.reserve(m_approx.size());
+
+        for (const auto& point : m_approx) {
+            worldVertices.emplace_back((static_cast<Real>(point.x) * resolution) + origin.x, //
+                                       (static_cast<Real>(point.y) * resolution) + origin.y);
+        }
+
+        // Store as a Polygon object
+        m_obstacles.emplace_back(worldVertices);
     }
 
-    // cv::HoughLinesP(image.mat(), m_lines, params.rho, params.theta, params.threshold, params.minLineLength, params.maxLineGap);
-
-    // std::println("Lines: {}", m_lines.size());
-
-    m_segments.clear();
-    m_segments.reserve(m_lines.size());
-    for (const auto& line : m_lines) {
-        // line = [x1, y1, x2, y2] in pixels
-        const Point2 p1{.x = (line[0] * image.resolution()) + image.origin().x, .y = (line[1] * image.resolution()) + image.origin().y};
-        const Point2 p2{.x = (line[2] * image.resolution()) + image.origin().x, .y = (line[3] * image.resolution()) + image.origin().y};
-        m_segments.push_back({p1, p2});
-    }
+    // Note: m_segments (lines) generation is removed because Tangent Bug uses Polygons directly.
+    // If you still need lines for visualization, you can generate them from m_obstacles
+    // in the draw loop or here.
 }
 
 } // namespace reanaut

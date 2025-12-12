@@ -9,7 +9,6 @@
 #include <imgui.h>
 
 #include <cstddef>
-#include <utility>
 #include <vector>
 
 namespace reanaut
@@ -21,7 +20,7 @@ public:
 
     Map(SDL_GPUDevice* device);
 
-    [[nodiscard]] auto numLines() const noexcept -> size_t { return m_lines.size(); }
+    [[nodiscard]] auto numObstacles() const noexcept -> size_t { return m_obstacles.size(); }
 
     void update(const OccupancyGrid& occupancy, bool gradient = false);
     void update(const ParticleFilter& filter);
@@ -32,7 +31,9 @@ public:
 
 private:
 
-    TransferTexture                        m_texture;
-    std::vector<std::pair<ImVec2, ImVec2>> m_lines;
+    TransferTexture m_texture;
+    // std::vector<std::pair<ImVec2, ImVec2>> m_lines;
+    std::vector<std::vector<ImVec2>> m_obstacles;
+    std::vector<ImVec2>              m_screenPoints;
 };
 } // namespace reanaut

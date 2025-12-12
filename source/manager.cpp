@@ -124,7 +124,7 @@ void Manager::update()
         }
         // _navigation.process_lidar_scans(_full_scan);
 
-        m_detector.extractSegments(m_image, m_detectorParams);
+        m_detector.extractObstacles(m_image, m_detectorParams);
         m_map.update(m_detector, m_image.resolution());
     } else {
         ++m_skippedLaserScanCounter;
@@ -219,7 +219,7 @@ void Manager::run()
         ImGui::End();
 
         if (ImGui::Begin("Debug")) {
-            ImGui::Text("Detected lines: %zu", m_map.numLines());
+            ImGui::Text("Detected obstacles: %zu", m_map.numObstacles());
             ImGui::Text("Skipped feedback: %zu", m_skippedFeedbackCounter);
             ImGui::Text("Skipped laser scan: %zu", m_skippedLaserScanCounter);
             ImGui::Checkbox("Map gradient", &m_enableMapGradient);
