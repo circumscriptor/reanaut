@@ -2,6 +2,7 @@
 #include "grid.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <optional>
@@ -43,7 +44,12 @@ Grid::Grid()
     m_grid.resize(size_t(width()) * height(), 0.0); // Initialize to 0 (Unknown probability 0.5)
 }
 
-auto Grid::at(Index index) const -> Real { return m_grid[(size_t(index.y) * width()) + index.x]; }
+auto Grid::at(Index index) const -> Real
+{
+    assert(index.x >= 0 && index.x < width());
+    assert(index.y >= 0 && index.y < height());
+    return m_grid[(size_t(index.y) * width()) + index.x];
+}
 
 auto Grid::get(Index index) const -> std::optional<Real>
 {

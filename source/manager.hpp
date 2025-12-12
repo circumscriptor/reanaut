@@ -5,6 +5,7 @@
 #include "connections.hpp"
 #include "kobuki.hpp"
 #include "laser.hpp"
+#include "lines.hpp"
 #include "map.hpp"
 #include "movement.hpp"
 #include "navigator.hpp"
@@ -18,6 +19,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -66,20 +68,28 @@ private:
     std::atomic<bool>         m_isPaused{false};
     std::vector<LaserScan>    m_scans;
     Velocity                  m_velocity;
+    size_t                    m_skippedFeedbackCounter{};
+    size_t                    m_skippedLaserScanCounter{};
+    bool                      m_enableMapGradient{};
+    bool                      m_enableVisualizeFilter{};
+    bool                      m_enableVisualizeCloud{};
 
-    Canvas           m_canvas;
-    KobukiConnection m_kobuki;
-    LaserConnection  m_laser;
-    Feedback         m_feedback;
-    Command          m_command;
-    Time             m_time;
-    Navigator        m_navigator;
-    OccupancyGrid    m_occupancy;
-    Map              m_map;
-    Odometry         m_odometry;
-    ParticleFilter   m_filter;
-    Particle         m_bestEstimate;
-    PointCloud       m_cloud;
+    Canvas                         m_canvas;
+    KobukiConnection               m_kobuki;
+    LaserConnection                m_laser;
+    Feedback                       m_feedback;
+    Command                        m_command;
+    Time                           m_time;
+    Navigator                      m_navigator;
+    OccupancyGrid                  m_occupancy;
+    Map                            m_map;
+    Odometry                       m_odometry;
+    ParticleFilter                 m_filter;
+    Particle                       m_bestEstimate;
+    PointCloud                     m_cloud;
+    GridImage                      m_image;
+    TurboUberSuperDetector         m_detector;
+    TurboUberSuperDetector::Params m_detectorParams;
     // camera _camera_receiver;
     // Movement         m_movement;
 };

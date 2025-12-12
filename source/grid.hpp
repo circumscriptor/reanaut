@@ -17,9 +17,10 @@ public:
 
     GridBase();
 
-    [[nodiscard]] auto width() const noexcept { return m_width; }
-    [[nodiscard]] auto height() const noexcept { return m_height; }
-    [[nodiscard]] auto resolution() const noexcept { return m_resolution; }
+    [[nodiscard]] auto width() const noexcept -> int { return m_width; }
+    [[nodiscard]] auto height() const noexcept -> int { return m_height; }
+    [[nodiscard]] auto resolution() const noexcept -> Real { return m_resolution; }
+    [[nodiscard]] auto origin() const -> Point2 { return {.x = m_originX, .y = m_originY}; }
 
     [[nodiscard]] auto inBounds(Index index) const -> bool;
 

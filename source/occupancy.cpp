@@ -7,7 +7,6 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <numbers>
 #include <optional>
 #include <vector>
 
@@ -26,8 +25,10 @@ auto OccupancyGrid::isOccupied(Point2 world) const -> bool
     if (not index) {
         return false;
     }
-    return at(*index) > 0.5;
+    return isOccupied(*index);
 }
+
+auto OccupancyGrid::isOccupied(Index index) const -> bool { return logOddsNormalize(at(index)) > 0.5; }
 
 auto OccupancyGrid::getProbability(Point2 world) const -> std::optional<Real>
 {
@@ -108,30 +109,6 @@ void OccupancyGrid::updateFromCloud(const Pose& robot, const PointCloud& cloud)
     }
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-void OccupancyGrid::getVirtualScan(std::vector<VirtualReading>& readings, const Pose& pose, double maxDistance, int numRays) const
-{
-    readings.clear();
-    readings.reserve(numRays);
-
-    const double angleStep = (2.0 * std::numbers::pi) / numRays;
-
-    for (int i = 0; i < numRays; ++i) {
-        double angle = -std::numbers::pi + (i * angleStep);
-
-        if (angle > std::numbers::pi) {
-            angle -= 2.0 * std::numbers::pi;
-        }
-
-        const double worldAngle = std::fmod(pose.theta + angle, 2.0 * std::numbers::pi);
-        const double dist       = castRay(Pose({.x = pose.x, .y = pose.y}, worldAngle), maxDistance);
-        readings.push_back({.angle    = angle, // Relative angle (Tangent bug needs this)
-                            .distance = dist,
-                            .worldX   = pose.x + (std::cos(worldAngle) * dist),
-                            .worldY   = pose.y + (std::sin(worldAngle) * dist)});
-    }
-}
-
 auto OccupancyGrid::castRay(const Pose& pose, Real maxDistance) const -> Real
 {
     const Real step = resolution();
@@ -184,10 +161,15 @@ void OccupancyGrid::traceLine(Index index0, Index index1)
     }
 }
 
+auto OccupancyGrid::logOddsNormalize(Real logOdds) -> Real
+{
+    const Real clamped = std::clamp(logOdds, kLogOddsMin, kLogOddsMax);
+    return (clamped - kLogOddsMin) / (kLogOddsMax - kLogOddsMin);
+}
+
 auto OccupancyGrid::logOddsToColor(Real logOdds) -> uint32_t
 {
-    const Real clamped    = std::clamp(logOdds, kLogOddsMin, kLogOddsMax);
-    const Real normalized = (clamped - kLogOddsMin) / (kLogOddsMax - kLogOddsMin);
+    const Real normalized = logOddsNormalize(logOdds);
     const auto value      = static_cast<uint8_t>(255.0 * (1.0 - normalized));
     return 0xFF000000 | (value << 16) | (value << 8) | value; // NOLINT
 }

@@ -9,8 +9,10 @@
 #include <boost/system/detail/error_code.hpp>
 #include <imgui.h>
 
-#include <cmath>
+// #include <algorithm>
 #include <csignal>
+// #include <limits>
+// #include <numbers>
 #include <print>
 #include <random>
 
@@ -21,7 +23,7 @@ Manager::Manager(const Options& options)
     : m_signals(m_ioContext, SIGINT, SIGTERM), // Listen for Ctrl+C and termination signals
       m_timer(m_ioContext), m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort),
       m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort),                                    //
-      m_navigator({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}), // TODO
+      m_navigator({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}), //
       m_map(m_canvas.device()),                                                                                                 //
       m_filter(std::random_device()())
 {
@@ -98,25 +100,36 @@ void Manager::update()
             m_bestEstimate = m_filter.getBestEstimate();
         }
     } else {
-        std::println("SKIPPED FEEDBACK, VERY BAD!");
-        scheduleNextUpdate();
-        return;
+        ++m_skippedFeedbackCounter;
+        // scheduleNextUpdate();
+        // return;
     }
 
     if (m_laser.getLatestSweep(m_scans)) {
         m_cloud.fromScans(m_bestEstimate, m_scans);
+
         m_occupancy.updateFromCloud(m_bestEstimate, m_cloud);
-        m_filter.updateFromScans(m_scans, m_occupancy);
+        m_image.update(m_occupancy);
+
         // m_filter.updateFromCloud(m_cloud, m_occupancy);
+        m_filter.updateFromScans(m_scans, m_occupancy);
         m_filter.resample();
-        m_map.update(m_occupancy);
-        m_map.update(m_filter);
-        m_map.update(m_cloud);
+
+        m_map.update(m_occupancy, m_enableMapGradient);
+        if (m_enableVisualizeFilter) {
+            m_map.update(m_filter);
+        }
+        if (m_enableVisualizeCloud) {
+            m_map.update(m_cloud);
+        }
         // _navigation.process_lidar_scans(_full_scan);
+
+        m_detector.extractSegments(m_image, m_detectorParams);
+        m_map.update(m_detector, m_image.resolution());
     } else {
-        std::println("SKIPPED LASER SWEEP, SOMEWHAT BAD!");
-        scheduleNextUpdate();
-        return;
+        ++m_skippedLaserScanCounter;
+        // scheduleNextUpdate();
+        // return;
     }
 
     // const Point2 goal{
@@ -193,8 +206,8 @@ void Manager::run()
         if (ImGui::Begin("Pose")) {
             ImGui::Text("Position: %f %f", m_bestEstimate.x, m_bestEstimate.y);
             ImGui::Text("Rotation: %f", m_bestEstimate.theta);
-            ImGui::End();
         }
+        ImGui::End();
 
         if (ImGui::Begin("Feedback")) {
             const auto& sensors  = m_feedback.getBasicSensors();
@@ -202,8 +215,38 @@ void Manager::run()
             ImGui::Text("Encoder: %d %d", sensors.leftEncoder, sensors.rightEncoder);
             ImGui::Text("Inertial: %d (%d)", inertial.angle, inertial.angleRate);
             ImGui::Text("Battery: %d", sensors.battery);
-            ImGui::End();
         }
+        ImGui::End();
+
+        if (ImGui::Begin("Debug")) {
+            ImGui::Text("Detected lines: %zu", m_map.numLines());
+            ImGui::Text("Skipped feedback: %zu", m_skippedFeedbackCounter);
+            ImGui::Text("Skipped laser scan: %zu", m_skippedLaserScanCounter);
+            ImGui::Checkbox("Map gradient", &m_enableMapGradient);
+            ImGui::Checkbox("Visualize filter", &m_enableVisualizeFilter);
+            ImGui::Checkbox("Visualize cloud", &m_enableVisualizeCloud);
+        }
+        ImGui::End();
+
+        // if (ImGui::Begin("Line Detector")) {
+        //     static constexpr double kStep     = 0.01;
+        //     static constexpr double kStepFast = 0.1;
+        //     ImGui::InputDouble("Distance resolution", &m_detectorParams.rho, kStep, kStepFast);
+        //     ImGui::InputDouble("Angle resolution", &m_detectorParams.theta, kStep, kStepFast);
+        //     ImGui::InputInt("Accumulator threshold", &m_detectorParams.threshold);
+        //     ImGui::InputDouble("Minimum length of line", &m_detectorParams.minLineLength, kStep, kStepFast);
+        //     ImGui::InputDouble("Maximum allowed gap", &m_detectorParams.maxLineGap, kStep, kStepFast);
+
+        //     m_detectorParams.rho   = std::clamp(m_detectorParams.rho, kStep, std::numeric_limits<double>::max());
+        //     m_detectorParams.theta = std::clamp(m_detectorParams.theta, kStep, std::numbers::pi);
+
+        //     // rho: Distance resolution (1 pixel)
+        //     // theta: Angle resolution (1 degree)
+        //     // threshold: Accumulator threshold (min votes to be a line)
+        //     // minLineLength: Minimum length of line (in pixels/cells)
+        //     // maxLineGap: Maximum allowed gap between points to be considered same line
+        // }
+        // ImGui::End();
 
         m_map.draw(commandBuffer);
     });

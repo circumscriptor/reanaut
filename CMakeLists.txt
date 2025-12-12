@@ -19,8 +19,12 @@ add_library(kalman INTERFACE)
 target_include_directories(kalman SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/kalman/include")
 
 # PF (particle filter)
+file(GLOB pf_headers RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "pf/include/pf/*.h")
+
 add_library(pf INTERFACE)
 target_include_directories(pf SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/pf/include")
+target_link_libraries(pf INTERFACE Eigen3::Eigen)
+target_sources(pf PRIVATE ${pf_headers})
 
 #
 # Main target
