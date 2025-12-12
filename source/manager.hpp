@@ -11,10 +11,7 @@
 #include "navigator.hpp"
 #include "occupancy.hpp"
 #include "particle.hpp"
-<<<<<<< HEAD
-=======
 //#include "tangent.hpp"
->>>>>>> 31969d5 (started tangent bug)
 #include "tangent_bug.hpp"
 #include "time.hpp"
 
@@ -79,7 +76,6 @@ private:
     bool                      m_enableVisualizeFilter{};
     bool                      m_enableVisualizeCloud{};
 
-<<<<<<< HEAD
     Canvas                         m_canvas;
     KobukiConnection               m_kobuki;
     LaserConnection                m_laser;
@@ -97,22 +93,6 @@ private:
     TurboUberSuperDetector         m_detector;
     TurboUberSuperDetector::Params m_detectorParams;
     TangentBug                     m_tangentBug;
-=======
-    Canvas           m_canvas;
-    KobukiConnection m_kobuki;
-    LaserConnection  m_laser;
-    Feedback         m_feedback;
-    Command          m_command;
-    Time             m_time;
-    Navigator        m_navigator;
-    TangentBug       m_tangentBug;
-    OccupancyGrid    m_occupancy;
-    Map              m_map;
-    Odometry         m_odometry;
-    ParticleFilter   m_filter;
-    Particle         m_bestEstimate;
-    PointCloud       m_cloud;
->>>>>>> 31969d5 (started tangent bug)
     // camera _camera_receiver;
     // Movement         m_movement;
 };

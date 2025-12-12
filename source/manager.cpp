@@ -154,8 +154,6 @@ void Manager::update()
 
     // auto [speed, radius] = m_velocity.computeControl();
     auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime());
-    // auto [speed, radius] = m_velocity.computeControl();
-    auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime());
 
     // Safety
     static bool s_informed       = false;
