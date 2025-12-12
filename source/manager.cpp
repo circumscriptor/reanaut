@@ -38,6 +38,8 @@ Manager::Manager(const Options& options)
     scheduleNextUpdate();
     scheduleNextCapture();
 
+    m_tangentBug.setDestination(1, 0);
+
     m_kobuki.asyncRecv();
     m_laser.asyncRecv();
 
@@ -80,9 +82,7 @@ void Manager::scheduleNextCapture()
             std::println("camera timer aborted");
             return;
         }
-
-        m_cameraTexture.update(m_camera.capture());
-        scheduleNextCapture();
+        updateCamera();
     });
 }
 
@@ -138,6 +138,7 @@ void Manager::update()
         m_filter.resample();
 
         m_map.update(m_occupancy, m_enableMapGradient);
+        m_map.update(m_elevation);
         m_map.update(m_filter, m_occupancy.resolution(), m_enableVisualizeFilter);
 
         if (m_enableVisualizeCloud) {
@@ -172,62 +173,36 @@ void Manager::update()
     //     m_command.baseControl(0, 0);
     // }
 
-    // auto [speed, radius] = m_velocity.computeControl();
-    auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime());
-    std::println("[Manager] tangentbug returned: speed={}, radius={}", speed, radius);
-
-    // Safety
-    static bool s_informed       = false;
-    const auto  shortestDistance = findShortestMeasurement(m_scans).distance;
-    if (shortestDistance < 250 && shortestDistance > 0.0) {
-        if (!s_informed) {
-            std::println("\033[31m!!!SAFETY STOP!!!\033[0m");
-            s_informed = true;
-        }
-        stopMotor();
-
-    } else {
-        s_informed = false;
+    if (m_useManualNavigation) {
+        auto [speed, radius] = m_velocity.computeControl();
 
         m_command.baseControl(speed, radius);
 
-        // if (m_kobuki.getLatestFeedback(m_feedback)) {
-        //     // auto velocity = m_navigator.updconst OccupancyGrid &mapate(m_movement.getState(), m_time.getDeltaTime());
-        //     // if (velocity) {
-        //     //     auto [speed, radius] = velocity->computeControl();
-        //     //     m_command.baseControl(speed, radius);
-        //     // } else {
-        //     //     m_command.baseControl(0, 0);
-        //     // }
-
-        //     // const auto current_x_m       = static_cast<float>(_movement.get_x());
-        //     // const auto current_y_m       = static_cast<float>(_movement.get_y());
-        //     // const auto current_theta_rad = static_cast<float>(_movement.get_angle());
-
-        //     // // --- 3. Determine control strategy based on navigation state ---
-        //     // const auto nav_state = _navigation.get_navigation_state();
-
-        //     // // Use navigation command for wall-following behavior (tangent bug algorithm)
-        //     // const auto motion_command = _navigation.get_navigation_command(current_x_m, current_y_m, current_theta_rad);
-
-        //     // if (nav_state == navigation_state::MOTION_TO_GOAL) {
-        //     //     // Check if goal has changed (e.g., user clicked new goal on map)
-        //     //     if (_navigation.has_goal_changed()) {
-        //     //         // New goal set - initialize movement targeting
-        //     //         _movement.set_target(_navigation.get_current_goal_x(), _navigation.get_current_goal_y());
-        //     //         std::println("Goal changed - calling set_target()\n";
-        //     //     }
-        //     //     // Use approach_target for smooth path to goal, but also respect navigation constraints
-        //     //     _movement.approach_target(_time.get_delta_time_s());
-        //     // } else if (nav_state == navigation_state::BOUNDARY_FOLLOWING) {
-        //     //     // Apply navigation commands from wall follower
-        //     //     _movement.set_forward_speed(motion_command.linear_velocity_m_s);
-        //     //     _movement.set_rotation_speed(motion_command.angular_velocity_rad_s);
-        //     // }
-        // }
-
         if (m_command.size() > 0) {
             m_kobuki.asyncSend(m_command);
+        }
+    } else {
+        auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime());
+        std::println("[Manager] tangentbug returned: speed={}, radius={}", speed, radius);
+
+        // Safety
+        static bool s_informed       = false;
+        const auto  shortestDistance = findShortestMeasurement(m_scans).distance;
+        if (shortestDistance < 250 && shortestDistance > 0.0) { // NOLINT
+            if (!s_informed) {
+                std::println("\033[31m!!!SAFETY STOP!!!\033[0m");
+                s_informed = true;
+            }
+            stopMotor();
+
+        } else {
+            s_informed = false;
+
+            m_command.baseControl(speed, radius);
+
+            if (m_command.size() > 0) {
+                m_kobuki.asyncSend(m_command);
+            }
         }
     }
     scheduleNextUpdate();
@@ -262,6 +237,7 @@ void Manager::run()
             ImGui::Checkbox("Map gradient", &m_enableMapGradient);
             ImGui::Checkbox("Visualize filter", &m_enableVisualizeFilter);
             ImGui::Checkbox("Visualize cloud", &m_enableVisualizeCloud);
+            ImGui::Checkbox("Manual control", &m_useManualNavigation);
         }
         ImGui::End();
 
@@ -273,12 +249,6 @@ void Manager::run()
 
             m_detectorParams.epsilon = std::clamp(m_detectorParams.epsilon, kStep, std::numeric_limits<double>::max());
             m_detectorParams.minArea = std::clamp(m_detectorParams.minArea, kStep, std::numeric_limits<double>::max());
-
-            // rho: Distance resolution (1 pixel)
-            // theta: Angle resolution (1 degree)
-            // threshold: Accumulator threshold (min votes to be a line)
-            // minLineLength: Minimum length of line (in pixels/cells)
-            // maxLineGap: Maximum allowed gap between points to be considered same line
         }
         ImGui::End();
 
@@ -288,6 +258,19 @@ void Manager::run()
     stopMotor();
 }
 
+void Manager::updateCamera()
+{
+    const auto& capture = m_camera.capture();
+    m_cameraTexture.update(capture);
+
+    if (not capture.empty()) {
+        m_depth.process(capture);
+        m_elevation.update(m_depth, m_bestEstimate);
+    }
+
+    scheduleNextCapture();
+}
+
 void Manager::processKeyboard()
 {
     const double kManualLinearSpeed  = 0.3; // m/s
@@ -295,22 +278,18 @@ void Manager::processKeyboard()
 
     // Check Linear (Forward/Backward)
     if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) {
-        m_velocity.linear     = kManualLinearSpeed;
-        m_useManualNavigation = true;
+        m_velocity.linear = kManualLinearSpeed;
     } else if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow)) {
-        m_velocity.linear     = -kManualLinearSpeed;
-        m_useManualNavigation = true;
+        m_velocity.linear = -kManualLinearSpeed;
     } else {
         m_velocity.linear = 0.0;
     }
 
     // Check Angular (Left/Right)
     if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow)) {
-        m_velocity.angular    = kManualAngularSpeed;
-        m_useManualNavigation = true;
+        m_velocity.angular = kManualAngularSpeed;
     } else if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) {
-        m_velocity.angular    = -kManualAngularSpeed;
-        m_useManualNavigation = true;
+        m_velocity.angular = -kManualAngularSpeed;
     } else {
         m_velocity.angular = 0.0;
     }

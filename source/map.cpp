@@ -1,5 +1,7 @@
 #include "cloud.hpp"
 #include "constants.hpp"
+#include "depth.hpp"
+#include "elevation.hpp"
 #include "lines.hpp"
 #include "map.hpp"
 #include "occupancy.hpp"
@@ -42,6 +44,16 @@ void Map::update(const OccupancyGrid& occupancy, bool gradient)
     }
 }
 
+void Map::update(const ElevationGrid& elevation)
+{
+    auto         grid = elevation.grid();
+    auto         map  = m_texture.pixels();
+    const size_t size = std::min(grid.size(), map.size());
+    for (size_t i = 0; i < size; ++i) {
+        map[i] = getHeatmapColor(grid[i]);
+    }
+}
+
 void Map::update(const ParticleFilter& filter, Real resolution, bool enableFilter)
 {
     if (enableFilter) {
@@ -77,7 +89,7 @@ void Map::update(const PointCloud& cloud)
 void Map::update(const TurboUberSuperDetector& detector, Real resolution)
 {
     m_obstacles.clear();
-    m_obstacles.reserve(detector.obstacles().size());
+    // m_obstacles.reserve(detector.obstacles().size());
 
     // Convert World Polygons to Grid Coordinates (ImVec2) for rendering
     m_obstacles.resize(detector.obstacles().size());

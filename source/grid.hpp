@@ -51,7 +51,11 @@ public:
     // [[nodiscard]] auto grid() -> std::span<Real> { return m_grid; }
     [[nodiscard]] auto grid() const -> std::span<const Real> { return m_grid; }
     [[nodiscard]] auto at(Index index) const -> Real;
+    [[nodiscard]] auto at(Index index) -> Real&;
     [[nodiscard]] auto get(Index index) const -> std::optional<Real>;
+
+    void set(Index index, Real value);
+    auto setPoint(Point2 world, Real value) -> bool;
 
     // Returns distance to nearest obstacle in the map from (x,y) at angle theta
     [[nodiscard]] auto getDistance(const Pose& pose, Real maxDistance = kLidarMaxRange) const -> Real;

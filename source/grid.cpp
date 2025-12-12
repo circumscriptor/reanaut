@@ -51,12 +51,30 @@ auto Grid::at(Index index) const -> Real
     return m_grid[(size_t(index.y) * width()) + index.x];
 }
 
+auto Grid::at(Index index) -> Real&
+{
+    assert(index.x >= 0 && index.x < width());
+    assert(index.y >= 0 && index.y < height());
+    return m_grid[(size_t(index.y) * width()) + index.x];
+}
+
 auto Grid::get(Index index) const -> std::optional<Real>
 {
     if (not inBounds(index)) {
         return std::nullopt;
     }
     return at(index);
+}
+
+void Grid::set(Index index, Real value) { at(index) = value; }
+
+auto Grid::setPoint(Point2 world, Real value) -> bool
+{
+    if (auto index = worldToGrid(world); index) {
+        at(*index) = value;
+        return true;
+    }
+    return false;
 }
 
 auto Grid::getDistance(const Pose& pose, Real maxDistance) const -> Real

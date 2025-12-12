@@ -4,6 +4,8 @@
 #include "canvas.hpp"
 #include "cloud.hpp"
 #include "connections.hpp"
+#include "depth.hpp"
+#include "elevation.hpp"
 #include "kobuki.hpp"
 #include "laser.hpp"
 #include "lines.hpp"
@@ -12,7 +14,6 @@
 #include "navigator.hpp"
 #include "occupancy.hpp"
 #include "particle.hpp"
-// #include "tangent.hpp"
 #include "tangent_bug.hpp"
 #include "time.hpp"
 
@@ -63,6 +64,7 @@ protected:
     void scheduleNextUpdate();
     void scheduleNextCapture();
     void update();
+    void updateCamera();
     void processKeyboard();
 
 private:
@@ -100,6 +102,7 @@ private:
     TangentBug                     m_tangentBug;
     Camera                         m_camera;
     CameraTexture                  m_cameraTexture;
-    // Movement         m_movement;
+    DepthProcessor                 m_depth;
+    ElevationGrid                  m_elevation;
 };
 } // namespace reanaut

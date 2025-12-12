@@ -1,5 +1,6 @@
 #include "cloud.hpp"
 #include "constants.hpp"
+#include "elevation.hpp"
 #include "grid.hpp"
 #include "lines.hpp"
 #include "occupancy.hpp"
@@ -25,6 +26,7 @@ public:
     [[nodiscard]] auto numObstacles() const noexcept -> size_t { return m_obstacles.size(); }
 
     void update(const OccupancyGrid& occupancy, bool gradient = false);
+    void update(const ElevationGrid& elevation);
     void update(const ParticleFilter& filter, Real resolution, bool enableFilter);
     void update(const PointCloud& cloud);
     void update(const TurboUberSuperDetector& detector, Real resolution);
