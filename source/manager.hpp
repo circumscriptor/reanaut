@@ -78,7 +78,7 @@ private:
     size_t                    m_skippedLaserScanCounter{};
     bool                      m_enableMapGradient{true};
     bool                      m_enableVisualizeFilter{};
-    bool                      m_enableVisualizeCloud{};
+    bool                      m_enableVisualizeCloud{true};
     bool                      m_useManualNavigation{true};
 
     Canvas                         m_canvas;

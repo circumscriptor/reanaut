@@ -136,27 +136,31 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                 auto phiY = 2 * phiErr; // phi_kp
                 std::println("\t[Tangentbug] phi_y: {:.2f}", phiY);
                 auto rotationSpeed = phiY * kMaxRotationSpeedRadps;
+                rotationSpeed      = std::clamp(rotationSpeed, -7.0 toDeg, 7.0 toDeg);
                 std::println("\t[Tangentbug] Rotation speed: {:.2f}", rotationSpeed toRad);
 
                 robotSpeed.angular = rotationSpeed toRad;
 
                 // --- MAINTAIN SPEED (dist_error adjust forward speed based on distance) ---
-                double distFrontLidar = findShortestMeasurementInRange(scans, -10,10).distance;
-                distFrontLidar        = std::clamp(distFrontLidar, 400.0, 600.0);
-                distFrontLidar -= 400;
-                distFrontLidar = map(distFrontLidar, 0, 200, 0.2, 1);
+                double distFrontLidar = findShortestMeasurementInRange(scans, -20, 20).distance -400;
+                distFrontLidar        = std::clamp(distFrontLidar, 0.0, 200.0);
+                auto distFrontLidarMultiplier = map(distFrontLidar, 0, 200, 0.05, 1);
+                std::println("\t[Tangentbug] distFrontLidarMultiplier: {:.2f}", distFrontLidarMultiplier);
 
-                // distFrontLidar        = std::clamp(map(distFrontLidar, ), 0.0, 1.0);
-                std::println("\t[Tangentbug] distFrontLidar: {:.2f}", distFrontLidar);
+                auto wallDistanceMultiplier = std::clamp(fabs(shortLidar.distance - kDesiredWallDistanceMm), 0.0, 200.0);
+                // wallDistanceMultiplier -= 400;
+                wallDistanceMultiplier = map(wallDistanceMultiplier, 0, 200, 0.5, 1);
+                std::println("\t[Tangentbug] wallDistanceMultiplier: {:.2f}", wallDistanceMultiplier);
 
-                double distFrontSaturation = distFrontLidar;
+                auto   wallLockedMultiplier   = m_wallLocked ? 0.8 : 0.4;
+                double forwardSpeedMulitplyer = distFrontLidarMultiplier * wallDistanceMultiplier * wallLockedMultiplier;
 
                 // If there's a warning, reduce speed
                 if (std::fabs(shortLidar.angle) <= 60) {
-                    distFrontSaturation = 0;
+                    forwardSpeedMulitplyer = 0;
                 }
-                std::println("\t[Tangentbug] distFrontSaturation: {:.2f}", distFrontSaturation);
-                auto forwardSpeed = distFrontSaturation * kMaxForwardSpeed * (m_wallLocked ? 0.8 : 0.4); // * fabs(1 - map(phiRobot,0,360,0,1));
+                std::println("\t[Tangentbug] linear speed multiplier: {:.2f}", forwardSpeedMulitplyer);
+                auto forwardSpeed = kMaxForwardSpeed * forwardSpeedMulitplyer; // * fabs(1 - map(phiRobot,0,360,0,1));
 
                 // if (!m_wallLocked) {
                 //     _forwardSpeed = 0;
