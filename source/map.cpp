@@ -9,6 +9,7 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <vector>
 
@@ -41,20 +42,26 @@ void Map::update(const OccupancyGrid& occupancy, bool gradient)
     }
 }
 
-void Map::update(const ParticleFilter& filter)
+void Map::update(const ParticleFilter& filter, Real resolution, bool enableFilter)
 {
-    for (const auto& particle : filter.particles()) {
-        Index index;
-        if (worldToGrid(particle, index)) {
-            m_texture.setPixel(index.x, index.y, 0xFF0000FF); // NOLINT
+    if (enableFilter) {
+        for (const auto& particle : filter.particles()) {
+            Index index;
+            if (worldToGrid(particle, index)) {
+                m_texture.setPixel(index.x, index.y, 0xFF0000FF); // NOLINT
+            }
         }
     }
 
     const auto bestEstimate = filter.getBestEstimate();
+    m_bestEstimate.emplace(Point2(bestEstimate.x / resolution, bestEstimate.y / resolution), bestEstimate.theta);
+    m_robotSize = 0.5 / resolution;
 
-    Index index;
-    if (worldToGrid(bestEstimate, index)) {
-        m_texture.setPixel(index.x, index.y, 0xFF00FF00); // NOLINT
+    if (enableFilter) {
+        Index index;
+        if (worldToGrid(bestEstimate, index)) {
+            m_texture.setPixel(index.x, index.y, 0xFF00FF00); // NOLINT
+        }
     }
 }
 
@@ -111,6 +118,8 @@ void Map::draw(SDL_GPUCommandBuffer* commandBuffer)
     drawList->AddRect(pos, ImVec2(pos.x + side, pos.y + side), IM_COL32(255, 0, 255, 255), 0.0F, 0, 2.0F);
 
     const auto scale = side / float(m_texture.width());
+    drawObstacles(drawList, pos, side, scale);
+    drawRobot(drawList, pos, side, scale);
 
     // for (const auto& [p1, p2] : m_lines) {
     //     const ImVec2 ip1(pos.x + (side * 0.5F) + (p1.x * scale), pos.y + (side * 0.5F) + (p1.y * scale));
@@ -118,7 +127,12 @@ void Map::draw(SDL_GPUCommandBuffer* commandBuffer)
     //     drawList->AddLine(ip1, ip2, IM_COL32(255, 128, 128, 255), 2.0F);
     // }
 
-    // Render Polygons
+    ImGui::End();
+    ImGui::PopStyleVar();
+}
+
+void Map::drawObstacles(ImDrawList* drawList, ImVec2 pos, float side, float scale)
+{
     for (const auto& poly : m_obstacles) {
         if (poly.empty()) {
             continue;
@@ -129,8 +143,8 @@ void Map::draw(SDL_GPUCommandBuffer* commandBuffer)
         m_screenPoints.clear();
         m_screenPoints.reserve(poly.size());
 
-        for (const auto& gridPt : poly) {
-            m_screenPoints.emplace_back(pos.x + (side * 0.5F) + (gridPt.x * scale), pos.y + (side * 0.5F) + (gridPt.y * scale));
+        for (const auto& point : poly) {
+            m_screenPoints.emplace_back(pos.x + (side * 0.5F) + (point.x * scale), pos.y + (side * 0.5F) + (point.y * scale));
         }
 
         // Draw Closed Polyline (Thick Yellow)
@@ -141,9 +155,23 @@ void Map::draw(SDL_GPUCommandBuffer* commandBuffer)
             drawList->AddCircleFilled(point, 3.0F, IM_COL32(255, 0, 0, 255)); // NOLINT
         }
     }
+}
 
-    ImGui::End();
-    ImGui::PopStyleVar();
+void Map::drawRobot(ImDrawList* drawList, ImVec2 pos, float side, float scale)
+{
+    if (m_bestEstimate) {
+        const auto   diameter = float(m_robotSize) * scale;
+        const auto   radius   = diameter * 0.5F;
+        const ImVec2 center(pos.x + (side * 0.5F) + float(m_bestEstimate->x * scale), pos.y + (side * 0.5F) + float(m_bestEstimate->y * scale));
+
+        drawList->AddCircleFilled(center, radius, IM_COL32(0, 255, 0, 255));  // NOLINT
+        drawList->AddCircle(center, radius, IM_COL32(0, 0, 0, 255), 0, 1.5f); // NOLINT
+
+        ImVec2 headingEnd(center.x + float(std::cos(m_bestEstimate->theta) * diameter), //
+                          center.y + float(std::sin(m_bestEstimate->theta) * diameter));
+
+        drawList->AddLine(center, headingEnd, IM_COL32(255, 0, 0, 255), 2.0F);
+    }
 }
 
 } // namespace reanaut

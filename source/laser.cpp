@@ -12,7 +12,10 @@ auto LaserScan::toMeters() const -> Real { return distance * kScanDistanceToWorl
 
 auto LaserScan::toBeamAngle() const -> Real { return Real(angle) / 180.0 * std::numbers::pi; }
 
-auto LaserScan::toWorldAngle(Real theta) const -> Real { return std::fmod(theta - toBeamAngle(), 2.0 * std::numbers::pi); }
+auto LaserScan::toWorldAngle(Real theta) const -> Real
+{
+    return std::fmod(theta - toBeamAngle() + std::numbers::pi, 2.0 * std::numbers::pi) - std::numbers::pi;
+}
 
 auto LaserScan::toWorldPoint(const Pose& pose) const -> Point2
 {

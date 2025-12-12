@@ -116,9 +116,8 @@ void Manager::update()
         m_filter.resample();
 
         m_map.update(m_occupancy, m_enableMapGradient);
-        if (m_enableVisualizeFilter) {
-            m_map.update(m_filter);
-        }
+        m_map.update(m_filter, m_occupancy.resolution(), m_enableVisualizeFilter);
+
         if (m_enableVisualizeCloud) {
             m_map.update(m_cloud);
         }
