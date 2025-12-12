@@ -1,9 +1,12 @@
 #include "constants.hpp"
 #include "laser.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numbers>
 #include <optional>
+#include <vector>
 
 namespace reanaut
 {
@@ -33,6 +36,71 @@ auto LaserScan::toWorldPointSafe(const Pose& pose) const -> std::optional<Point2
         return std::nullopt;
     }
     return toWorldPoint(pose);
+}
+
+auto findClosestSampleFromAngle(const std::vector<LaserScan>& scans, float targetDeg) -> LaserScan
+{
+    if (scans.empty()) {
+        return LaserScan{};
+    }
+
+    float         minDiff = 361.0f; // Larger than any possible angle difference
+    unsigned long index   = 0;
+
+    for (unsigned long i = 0; i < scans.size(); ++i) {
+        const auto& measurement = scans.at(i);
+        // Convert measurement from radians to degrees for comparison
+
+        float diff = std::abs(shortestAngleDiff(measurement.angle, targetDeg));
+
+        if (diff < minDiff) {
+            minDiff = diff;
+            index   = i;
+        }
+    }
+    return scans.at(index);
+}
+
+auto findShortestMeasurement(const std::vector<LaserScan>& scans) -> LaserScan
+{
+    if (scans.empty()) {
+        return LaserScan{};
+    }
+    return *std::min_element(scans.data(), scans.data() + scans.size(), [](const auto& left, const auto& right) {
+        // Protect against invalid 0.0 distance readings
+        if (left.distance <= 0.0F) {
+            return false;
+        }
+        if (right.distance <= 0.0F) {
+            return true;
+        }
+        return left.distance < right.distance;
+    });
+}
+
+auto findShortestMeasurementInRange(const std::vector<LaserScan>& scans, float startDeg, float endDeg) -> LaserScan
+{
+    float minDist = std::numeric_limits<float>::max();
+    long  index   = -1;
+
+    for (unsigned long i = 0; i < scans.size(); ++i) {
+        const auto& measurement = scans.at(i);
+        if (measurement.distance <= 0.0F) {
+            continue; // Ignore invalid distances
+        }
+
+        if (measurement.isBetween(startDeg, endDeg)) {
+            if (measurement.distance < minDist) {
+                minDist = measurement.distance;
+                index   = i;
+            }
+        }
+    }
+
+    if (index < 0) {
+        return LaserScan{};
+    }
+    return scans.at(index);
 }
 
 } // namespace reanaut

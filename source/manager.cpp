@@ -1,6 +1,7 @@
 #include "canvas.hpp"
 #include "constants.hpp"
 #include "kobuki.hpp"
+#include "laser.hpp"
 #include "manager.hpp"
 
 #include <SDL3/SDL_gpu.h>
@@ -9,7 +10,6 @@
 #include <boost/system/detail/error_code.hpp>
 #include <imgui.h>
 
-// #include <algorithm>
 #include <csignal>
 // #include <limits>
 // #include <numbers>
@@ -151,47 +151,61 @@ void Manager::update()
     // }
 
     auto [speed, radius] = m_velocity.computeControl();
-    m_command.baseControl(speed, radius);
 
-    // if (m_kobuki.getLatestFeedback(m_feedback)) {
-    //     // auto velocity = m_navigator.updconst OccupancyGrid &mapate(m_movement.getState(), m_time.getDeltaTime());
-    //     // if (velocity) {
-    //     //     auto [speed, radius] = velocity->computeControl();
-    //     //     m_command.baseControl(speed, radius);
-    //     // } else {
-    //     //     m_command.baseControl(0, 0);
-    //     // }
+    // Safety
+    static bool s_informed       = false;
+    const auto  shortestDistance = findShortestMeasurement(m_scans).distance;
+    if (shortestDistance < 250 && shortestDistance > 0.0) {
+        if (!s_informed) {
+            std::println("\033[31m!!!SAFETY STOP!!!\033[0m");
+            s_informed = true;
+        }
+        stopMotor();
 
-    //     // const auto current_x_m       = static_cast<float>(_movement.get_x());
-    //     // const auto current_y_m       = static_cast<float>(_movement.get_y());
-    //     // const auto current_theta_rad = static_cast<float>(_movement.get_angle());
+    } else {
+        s_informed = false;
 
-    //     // // --- 3. Determine control strategy based on navigation state ---
-    //     // const auto nav_state = _navigation.get_navigation_state();
+        m_command.baseControl(speed, radius);
 
-    //     // // Use navigation command for wall-following behavior (tangent bug algorithm)
-    //     // const auto motion_command = _navigation.get_navigation_command(current_x_m, current_y_m, current_theta_rad);
+        // if (m_kobuki.getLatestFeedback(m_feedback)) {
+        //     // auto velocity = m_navigator.updconst OccupancyGrid &mapate(m_movement.getState(), m_time.getDeltaTime());
+        //     // if (velocity) {
+        //     //     auto [speed, radius] = velocity->computeControl();
+        //     //     m_command.baseControl(speed, radius);
+        //     // } else {
+        //     //     m_command.baseControl(0, 0);
+        //     // }
 
-    //     // if (nav_state == navigation_state::MOTION_TO_GOAL) {
-    //     //     // Check if goal has changed (e.g., user clicked new goal on map)
-    //     //     if (_navigation.has_goal_changed()) {
-    //     //         // New goal set - initialize movement targeting
-    //     //         _movement.set_target(_navigation.get_current_goal_x(), _navigation.get_current_goal_y());
-    //     //         std::println("Goal changed - calling set_target()\n";
-    //     //     }
-    //     //     // Use approach_target for smooth path to goal, but also respect navigation constraints
-    //     //     _movement.approach_target(_time.get_delta_time_s());
-    //     // } else if (nav_state == navigation_state::BOUNDARY_FOLLOWING) {
-    //     //     // Apply navigation commands from wall follower
-    //     //     _movement.set_forward_speed(motion_command.linear_velocity_m_s);
-    //     //     _movement.set_rotation_speed(motion_command.angular_velocity_rad_s);
-    //     // }
-    // }
+        //     // const auto current_x_m       = static_cast<float>(_movement.get_x());
+        //     // const auto current_y_m       = static_cast<float>(_movement.get_y());
+        //     // const auto current_theta_rad = static_cast<float>(_movement.get_angle());
 
-    if (m_command.size() > 0) {
-        m_kobuki.asyncSend(m_command);
+        //     // // --- 3. Determine control strategy based on navigation state ---
+        //     // const auto nav_state = _navigation.get_navigation_state();
+
+        //     // // Use navigation command for wall-following behavior (tangent bug algorithm)
+        //     // const auto motion_command = _navigation.get_navigation_command(current_x_m, current_y_m, current_theta_rad);
+
+        //     // if (nav_state == navigation_state::MOTION_TO_GOAL) {
+        //     //     // Check if goal has changed (e.g., user clicked new goal on map)
+        //     //     if (_navigation.has_goal_changed()) {
+        //     //         // New goal set - initialize movement targeting
+        //     //         _movement.set_target(_navigation.get_current_goal_x(), _navigation.get_current_goal_y());
+        //     //         std::println("Goal changed - calling set_target()\n";
+        //     //     }
+        //     //     // Use approach_target for smooth path to goal, but also respect navigation constraints
+        //     //     _movement.approach_target(_time.get_delta_time_s());
+        //     // } else if (nav_state == navigation_state::BOUNDARY_FOLLOWING) {
+        //     //     // Apply navigation commands from wall follower
+        //     //     _movement.set_forward_speed(motion_command.linear_velocity_m_s);
+        //     //     _movement.set_rotation_speed(motion_command.angular_velocity_rad_s);
+        //     // }
+        // }
+
+        if (m_command.size() > 0) {
+            m_kobuki.asyncSend(m_command);
+        }
     }
-
     scheduleNextUpdate();
 }
 
