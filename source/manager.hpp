@@ -81,6 +81,8 @@ private:
     bool                      m_enableMapGradient{true};
     bool                      m_enableVisualizeFilter{};
     bool                      m_enableVisualizeCloud{true};
+    bool                      m_enableVisualizeObstacles{true};
+    bool                      m_enableVisualizeElevation{true};
     bool                      m_useManualNavigation{true};
 
     Canvas                         m_canvas;

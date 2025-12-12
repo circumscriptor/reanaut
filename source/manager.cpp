@@ -138,7 +138,9 @@ void Manager::update()
         m_filter.resample();
 
         m_map.update(m_occupancy, m_enableMapGradient);
-        m_map.update(m_elevation);
+        if (m_enableVisualizeElevation) {
+            m_map.update(m_elevation);
+        }
         m_map.update(m_filter, m_occupancy.resolution(), m_enableVisualizeFilter);
 
         if (m_enableVisualizeCloud) {
@@ -147,7 +149,9 @@ void Manager::update()
         // _navigation.process_lidar_scans(_full_scan);
 
         m_detector.extractObstacles(m_image, m_detectorParams);
-        m_map.update(m_detector, m_image.resolution());
+        if (m_enableVisualizeObstacles) {
+            m_map.update(m_detector, m_image.resolution());
+        }
     } else {
         ++m_skippedLaserScanCounter;
         // scheduleNextUpdate();
@@ -237,6 +241,8 @@ void Manager::run()
             ImGui::Checkbox("Map gradient", &m_enableMapGradient);
             ImGui::Checkbox("Visualize filter", &m_enableVisualizeFilter);
             ImGui::Checkbox("Visualize cloud", &m_enableVisualizeCloud);
+            ImGui::Checkbox("Visualize obstacles", &m_enableVisualizeObstacles);
+            ImGui::Checkbox("Visualize elevation", &m_enableVisualizeElevation);
             ImGui::Checkbox("Manual control", &m_useManualNavigation);
         }
         ImGui::End();

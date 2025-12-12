@@ -28,10 +28,10 @@ public:
     using Real = RealType;
 
     // Constants from PDF Page 8, Equation (10)
-    static constexpr Real kFu = 430.443939208984F;
-    static constexpr Real kFv = 430.443939208984F;
-    static constexpr Real kCu = 422.133117675781F;
-    static constexpr Real kCv = 234.030456542969F;
+    static constexpr Real kFu = Real(430.443939208984);
+    static constexpr Real kFv = Real(430.443939208984);
+    static constexpr Real kCu = Real(422.133117675781);
+    static constexpr Real kCv = Real(234.030456542969);
 
     // Translation from PDF Page 8: 12cm offset in Robot X
     static constexpr Real kOffsetX = 0.12F;
