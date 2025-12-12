@@ -102,31 +102,31 @@ void Map::draw(SDL_GPUCommandBuffer* commandBuffer)
     m_texture.upload(commandBuffer);
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::Begin("Map");
+    if (ImGui::Begin("Map")) {
 
-    const ImVec2 canvasPos  = ImGui::GetCursorScreenPos();
-    const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+        const ImVec2 canvasPos  = ImGui::GetCursorScreenPos();
+        const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
-    const float side = std::min(canvasSize.x, canvasSize.y);
+        const float side = std::min(canvasSize.x, canvasSize.y);
 
-    const ImVec2 pos(canvasPos.x + ((canvasSize.x - side) * 0.5F), canvasPos.y + ((canvasSize.y - side) * 0.5F));
+        const ImVec2 pos(canvasPos.x + ((canvasSize.x - side) * 0.5F), canvasPos.y + ((canvasSize.y - side) * 0.5F));
 
-    ImGui::SetCursorScreenPos(pos);
-    ImGui::Image((ImTextureID)m_texture.texture(), ImVec2(side, side));
+        ImGui::SetCursorScreenPos(pos);
+        ImGui::Image((ImTextureID)m_texture.texture(), ImVec2(side, side));
 
-    ImDrawList* drawList = ImGui::GetWindowDrawList();
-    drawList->AddRect(pos, ImVec2(pos.x + side, pos.y + side), IM_COL32(255, 0, 255, 255), 0.0F, 0, 2.0F);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->AddRect(pos, ImVec2(pos.x + side, pos.y + side), IM_COL32(255, 0, 255, 255), 0.0F, 0, 2.0F);
 
-    const auto scale = side / float(m_texture.width());
-    drawObstacles(drawList, pos, side, scale);
-    drawRobot(drawList, pos, side, scale);
+        const auto scale = side / float(m_texture.width());
+        drawObstacles(drawList, pos, side, scale);
+        drawRobot(drawList, pos, side, scale);
 
-    // for (const auto& [p1, p2] : m_lines) {
-    //     const ImVec2 ip1(pos.x + (side * 0.5F) + (p1.x * scale), pos.y + (side * 0.5F) + (p1.y * scale));
-    //     const ImVec2 ip2(pos.x + (side * 0.5F) + (p2.x * scale), pos.y + (side * 0.5F) + (p2.y * scale));
-    //     drawList->AddLine(ip1, ip2, IM_COL32(255, 128, 128, 255), 2.0F);
-    // }
-
+        // for (const auto& [p1, p2] : m_lines) {
+        //     const ImVec2 ip1(pos.x + (side * 0.5F) + (p1.x * scale), pos.y + (side * 0.5F) + (p1.y * scale));
+        //     const ImVec2 ip2(pos.x + (side * 0.5F) + (p2.x * scale), pos.y + (side * 0.5F) + (p2.y * scale));
+        //     drawList->AddLine(ip1, ip2, IM_COL32(255, 128, 128, 255), 2.0F);
+        // }
+    }
     ImGui::End();
     ImGui::PopStyleVar();
 }
@@ -167,10 +167,10 @@ void Map::drawRobot(ImDrawList* drawList, ImVec2 pos, float side, float scale)
         drawList->AddCircleFilled(center, radius, IM_COL32(0, 255, 0, 255));  // NOLINT
         drawList->AddCircle(center, radius, IM_COL32(0, 0, 0, 255), 0, 1.5f); // NOLINT
 
-        ImVec2 headingEnd(center.x + float(std::cos(m_bestEstimate->theta) * diameter), //
-                          center.y + float(std::sin(m_bestEstimate->theta) * diameter));
+        const ImVec2 heading(center.x + float(std::cos(m_bestEstimate->theta) * diameter), //
+                             center.y + float(std::sin(m_bestEstimate->theta) * diameter));
 
-        drawList->AddLine(center, headingEnd, IM_COL32(255, 0, 0, 255), 2.0F);
+        drawList->AddLine(center, heading, IM_COL32(255, 0, 0, 255), 2.0F);
     }
 }
 

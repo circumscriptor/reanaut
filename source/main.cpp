@@ -39,7 +39,7 @@ auto main(int argc, char** argv) -> int
     static constexpr uint16_t kLaserHostPort    = 52999;
     static constexpr uint16_t kLaserTargetPort  = 5299;
 
-    const std::string cameraUrl = "http://192.168.1.16:8080/video.mjpeg";
+    const std::string cameraUrl = "http://192.168.1.16:8889/";
     const std::string robotIp   = "192.168.1.16";
 
     reanaut::Manager::Options opts;

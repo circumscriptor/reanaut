@@ -38,7 +38,7 @@ protected:
 
 private:
 
-    TransferTexture m_texture;
+    TransferTextureStorage m_texture;
     // std::vector<std::pair<ImVec2, ImVec2>> m_lines;
     std::vector<std::vector<ImVec2>> m_obstacles;
     std::vector<ImVec2>              m_screenPoints;

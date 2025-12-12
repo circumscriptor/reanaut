@@ -1,5 +1,6 @@
 #pragma once
 
+#include "camera.hpp"
 #include "canvas.hpp"
 #include "cloud.hpp"
 #include "connections.hpp"
@@ -11,7 +12,7 @@
 #include "navigator.hpp"
 #include "occupancy.hpp"
 #include "particle.hpp"
-//#include "tangent.hpp"
+// #include "tangent.hpp"
 #include "tangent_bug.hpp"
 #include "time.hpp"
 
@@ -33,7 +34,8 @@ class Manager
 {
 public:
 
-    static constexpr std::chrono::milliseconds kLoopInterval{1000 / 40}; // 40 Hz
+    static constexpr std::chrono::milliseconds kLoopInterval{1000 / 40};    // 40 Hz
+    static constexpr std::chrono::milliseconds kCaptureInterval{1000 / 10}; // 10 Hz
 
     struct Options
     {
@@ -59,6 +61,7 @@ protected:
 
     void waitForSignal();
     void scheduleNextUpdate();
+    void scheduleNextCapture();
     void update();
     void processKeyboard();
 
@@ -67,6 +70,7 @@ private:
     boost::asio::io_context   m_ioContext;
     boost::asio::signal_set   m_signals;
     boost::asio::steady_timer m_timer;
+    boost::asio::steady_timer m_cameraTimer;
     std::atomic<bool>         m_isPaused{false};
     std::vector<LaserScan>    m_scans;
     Velocity                  m_velocity;
@@ -75,6 +79,7 @@ private:
     bool                      m_enableMapGradient{};
     bool                      m_enableVisualizeFilter{};
     bool                      m_enableVisualizeCloud{};
+    bool                      m_useManualNavigation{true};
 
     Canvas                         m_canvas;
     KobukiConnection               m_kobuki;
@@ -93,7 +98,8 @@ private:
     TurboUberSuperDetector         m_detector;
     TurboUberSuperDetector::Params m_detectorParams;
     TangentBug                     m_tangentBug;
-    // camera _camera_receiver;
+    Camera                         m_camera;
+    CameraTexture                  m_cameraTexture;
     // Movement         m_movement;
 };
 } // namespace reanaut

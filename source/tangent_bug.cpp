@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#define robotStop            \
+#define robotStop           \
     robotSpeed.angular = 0; \
     robotSpeed.linear  = 0
 
@@ -19,7 +19,7 @@ namespace reanaut
 TangentBug::TangentBug() : m_pointFollower({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}) {};
 
 auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosition, RealType dt) -> std::pair<uint16_t, uint16_t>
-{    
+{
     Velocity robotSpeed;
 
     auto currentDistToDest = distance(m_destination.x, m_destination.y, robotPosition.x, robotPosition.y);
@@ -46,8 +46,11 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
             } else {
                 std::println("APPROACHING TARGET");
                 auto temp = m_pointFollower.update(robotPosition, dt);
-                if(temp) robotSpeed = *temp;
-                else std::println("Navigator update returned invalid data");
+                if (temp) {
+                    robotSpeed = *temp;
+                } else {
+                    std::println("Navigator update returned invalid data");
+                }
             }
 
             // if (m_pointFollower.isActive()) {
@@ -66,7 +69,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
         }
         case State::FollowWallL:
         case State::FollowWallR: {
-            bool isRightSide = m_state == State::FollowWallR;
+            // bool isRightSide = m_state == State::FollowWallR;
 
             std::println("\n\nRobot: X:{:.2f}, Y:{:.2f}, R:{:.2f}\nTarget: X:{:.2f}, Y:{:.2f}\nDistance to target {:.2f}\n", robotPosition.x, robotPosition.y,
                          robotPosition.theta, m_destination.x, m_destination.y, currentDistToDest);

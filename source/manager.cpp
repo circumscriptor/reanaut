@@ -10,9 +10,12 @@
 #include <boost/system/detail/error_code.hpp>
 #include <imgui.h>
 
+// #include <algorithm>
+#include <algorithm>
 #include <csignal>
 // #include <limits>
 // #include <numbers>
+#include <limits>
 #include <print>
 #include <random>
 
@@ -20,23 +23,26 @@ namespace reanaut
 {
 
 Manager::Manager(const Options& options)
-    : m_signals(m_ioContext, SIGINT, SIGTERM), // Listen for Ctrl+C and termination signals
-      m_timer(m_ioContext), m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort),
-      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort),                                    //
+    : m_signals(m_ioContext, SIGINT, SIGTERM),                                                  // Listen for Ctrl+C and termination signals
+      m_timer(m_ioContext),                                                                     //
+      m_cameraTimer(m_ioContext),                                                               //
+      m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort), //
+      m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort),    //
       m_navigator({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}), //
       m_map(m_canvas.device()),                                                                                                 //
-      m_filter(std::random_device()())
+      m_filter(std::random_device()()),                                                                                         //
+      m_camera(options.cameraUrl),                                                                                              //
+      m_cameraTexture(m_canvas.device())
 {
     waitForSignal();
     scheduleNextUpdate();
+    scheduleNextCapture();
 
     m_kobuki.asyncRecv();
     m_laser.asyncRecv();
 
     m_filter.init({});
     // _movement.set_target(DEFAULT_NAVIGATE_TO_X, DEFAULT_NAVIGATE_TO_Y);
-
-    m_tangentBug.setDestination(1, 0);
 }
 
 void Manager::waitForSignal()
@@ -64,6 +70,20 @@ void Manager::scheduleNextUpdate()
     });
 
     // _timer.cancel();
+}
+
+void Manager::scheduleNextCapture()
+{
+    m_cameraTimer.expires_after(kCaptureInterval);
+    m_cameraTimer.async_wait([this](const boost::system::error_code& error) {
+        if (error.value() == boost::asio::error::operation_aborted) {
+            std::println("camera timer aborted");
+            return;
+        }
+
+        m_cameraTexture.update(m_camera.capture());
+        scheduleNextCapture();
+    });
 }
 
 void Manager::pause()
@@ -244,27 +264,25 @@ void Manager::run()
         }
         ImGui::End();
 
-        // if (ImGui::Begin("Line Detector")) {
-        //     static constexpr double kStep     = 0.01;
-        //     static constexpr double kStepFast = 0.1;
-        //     ImGui::InputDouble("Distance resolution", &m_detectorParams.rho, kStep, kStepFast);
-        //     ImGui::InputDouble("Angle resolution", &m_detectorParams.theta, kStep, kStepFast);
-        //     ImGui::InputInt("Accumulator threshold", &m_detectorParams.threshold);
-        //     ImGui::InputDouble("Minimum length of line", &m_detectorParams.minLineLength, kStep, kStepFast);
-        //     ImGui::InputDouble("Maximum allowed gap", &m_detectorParams.maxLineGap, kStep, kStepFast);
+        if (ImGui::Begin("Obstacle Detector")) {
+            static constexpr double kStep     = 0.01;
+            static constexpr double kStepFast = 0.1;
+            ImGui::InputDouble("Epsilon", &m_detectorParams.epsilon, kStep, kStepFast);
+            ImGui::InputDouble("Minimum area", &m_detectorParams.minArea, kStep, kStepFast);
 
-        //     m_detectorParams.rho   = std::clamp(m_detectorParams.rho, kStep, std::numeric_limits<double>::max());
-        //     m_detectorParams.theta = std::clamp(m_detectorParams.theta, kStep, std::numbers::pi);
+            m_detectorParams.epsilon = std::clamp(m_detectorParams.epsilon, kStep, std::numeric_limits<double>::max());
+            m_detectorParams.minArea = std::clamp(m_detectorParams.minArea, kStep, std::numeric_limits<double>::max());
 
-        //     // rho: Distance resolution (1 pixel)
-        //     // theta: Angle resolution (1 degree)
-        //     // threshold: Accumulator threshold (min votes to be a line)
-        //     // minLineLength: Minimum length of line (in pixels/cells)
-        //     // maxLineGap: Maximum allowed gap between points to be considered same line
-        // }
-        // ImGui::End();
+            // rho: Distance resolution (1 pixel)
+            // theta: Angle resolution (1 degree)
+            // threshold: Accumulator threshold (min votes to be a line)
+            // minLineLength: Minimum length of line (in pixels/cells)
+            // maxLineGap: Maximum allowed gap between points to be considered same line
+        }
+        ImGui::End();
 
         m_map.draw(commandBuffer);
+        m_cameraTexture.draw(commandBuffer);
     });
     stopMotor();
 }
@@ -276,18 +294,22 @@ void Manager::processKeyboard()
 
     // Check Linear (Forward/Backward)
     if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) {
-        m_velocity.linear = kManualLinearSpeed;
+        m_velocity.linear     = kManualLinearSpeed;
+        m_useManualNavigation = true;
     } else if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow)) {
-        m_velocity.linear = -kManualLinearSpeed;
+        m_velocity.linear     = -kManualLinearSpeed;
+        m_useManualNavigation = true;
     } else {
         m_velocity.linear = 0.0;
     }
 
     // Check Angular (Left/Right)
     if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow)) {
-        m_velocity.angular = kManualAngularSpeed;
+        m_velocity.angular    = kManualAngularSpeed;
+        m_useManualNavigation = true;
     } else if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) {
-        m_velocity.angular = -kManualAngularSpeed;
+        m_velocity.angular    = -kManualAngularSpeed;
+        m_useManualNavigation = true;
     } else {
         m_velocity.angular = 0.0;
     }

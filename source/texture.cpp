@@ -33,8 +33,6 @@ TransferTexture::TransferTexture(SDL_GPUDevice* device, uint32_t width, uint32_t
     };
 
     m_transferBuffer = SDL_CreateGPUTransferBuffer(m_device, &bufferCreateInfo);
-
-    m_pixels.resize(size_t(m_width) * m_height);
 }
 
 TransferTexture::~TransferTexture()
@@ -47,16 +45,19 @@ TransferTexture::~TransferTexture()
     }
 }
 
-auto TransferTexture::upload(SDL_GPUCommandBuffer* commandBuffer) -> bool { return copyToTransferBuffer() && uploadToGPUTexture(commandBuffer); }
+auto TransferTexture::upload(SDL_GPUCommandBuffer* commandBuffer, const void* buffer, size_t length) -> bool
+{
+    return copyToTransferBuffer(buffer, length) && uploadToGPUTexture(commandBuffer);
+}
 
-auto TransferTexture::copyToTransferBuffer() -> bool
+auto TransferTexture::copyToTransferBuffer(const void* buffer, size_t length) -> bool
 {
     void* ptr = SDL_MapGPUTransferBuffer(m_device, m_transferBuffer, false);
     if (ptr == nullptr) {
         return false;
     }
 
-    std::memcpy(ptr, m_pixels.data(), m_pixels.size() * sizeof(uint32_t));
+    std::memcpy(ptr, buffer, length);
 
     SDL_UnmapGPUTransferBuffer(m_device, m_transferBuffer);
     return true;
@@ -94,13 +95,23 @@ auto TransferTexture::uploadToGPUTexture(SDL_GPUCommandBuffer* commandBuffer) ->
     return true;
 }
 
-auto TransferTexture::setPixel(int px, int py, uint32_t color) -> bool
+TransferTextureStorage::TransferTextureStorage(SDL_GPUDevice* device, uint32_t width, uint32_t height) : TransferTexture(device, width, height)
 {
-    if (px >= 0 && uint32_t(px) <= m_width && py >= 0 && uint32_t(py) <= m_height) {
-        m_pixels[size_t(py * m_width) + px] = color;
+    m_pixels.resize(size_t(width) * height);
+}
+
+auto TransferTextureStorage::setPixel(int px, int py, uint32_t color) -> bool
+{
+    if (px >= 0 && uint32_t(px) <= width() && py >= 0 && uint32_t(py) <= height()) {
+        m_pixels[size_t(py * width()) + px] = color;
         return true;
     }
     return false;
+}
+
+auto TransferTextureStorage::upload(SDL_GPUCommandBuffer* commandBuffer) -> bool
+{
+    return TransferTexture::upload(commandBuffer, m_pixels.data(), m_pixels.size() * sizeof(uint32_t));
 }
 
 } // namespace reanaut
