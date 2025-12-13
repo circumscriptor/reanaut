@@ -170,7 +170,7 @@ auto OccupancyGrid::logOddsNormalize(Real logOdds) -> Real
 auto OccupancyGrid::logOddsToColor(Real logOdds) -> uint32_t
 {
     const Real normalized = logOddsNormalize(logOdds);
-    const auto value      = static_cast<uint8_t>(255.0 * (1.0 - normalized));
+    const auto value      = static_cast<uint8_t>(Real(255) * (Real(1) - normalized));
     return 0xFF000000 | (value << 16) | (value << 8) | value; // NOLINT
 }
 

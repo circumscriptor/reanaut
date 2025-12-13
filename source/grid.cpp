@@ -111,9 +111,8 @@ void Grid::updateCell(Index index, Real change)
 {
     int idx = (index.y * width()) + index.x;
     if (idx >= 0 && idx < int(m_grid.size())) {
-        m_grid[idx] += change;
         // Clamp values to prevent overconfidence/underflow
-        m_grid[idx] = std::clamp(m_grid[idx], kLogOddsMin, kLogOddsMax);
+        m_grid[idx] = std::clamp(m_grid[idx] + change, kLogOddsMin, kLogOddsMax);
     }
 }
 

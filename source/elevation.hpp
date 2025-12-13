@@ -11,7 +11,13 @@ class ElevationGrid : public Grid
 {
 public:
 
+    using Real = RealType;
+
     void update(const DepthProcessor& depth, const Pose& pose);
+
+protected:
+
+    void updateCell(Real pointX, Real pointY, Real pointZ);
 };
 
 } // namespace reanaut

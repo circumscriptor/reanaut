@@ -34,7 +34,7 @@ public:
     static constexpr Real kCv = Real(234.030456542969);
 
     // Translation from PDF Page 8: 12cm offset in Robot X
-    static constexpr Real kOffsetX = 0.12F;
+    static constexpr Real kOffsetX = Real(0.12);
 
     [[nodiscard]] auto points() const -> std::span<const Point3> { return m_points; }
 

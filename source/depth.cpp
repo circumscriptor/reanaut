@@ -61,14 +61,14 @@ auto getHeatmapColor(RealType value) -> uint32_t
 
     // "Jet" Colormap approximation
     // 4.0 * t - 1.5 shifts the range for each channel
-    RealType r = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(3)), RealType(0), RealType(1));
-    RealType g = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(2)), RealType(0), RealType(1));
-    RealType b = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(1)), RealType(0), RealType(1));
+    const auto r = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(3)), RealType(0), RealType(1));
+    const auto g = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(2)), RealType(0), RealType(1));
+    const auto b = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(1)), RealType(0), RealType(1));
 
     // Convert to 0-255
-    auto R = static_cast<uint8_t>(r * RealType(255));
-    auto G = static_cast<uint8_t>(g * RealType(255));
-    auto B = static_cast<uint8_t>(b * RealType(255));
+    const auto R = static_cast<uint8_t>(r * RealType(255));
+    const auto G = static_cast<uint8_t>(g * RealType(255));
+    const auto B = static_cast<uint8_t>(b * RealType(255));
 
     // SDL_GPU expects R8G8B8A8, but usually packaged in uint32 as ABGR (Little Endian)
     // or RGBA (Big Endian). Assuming Little Endian (x86/ARM):
