@@ -2,7 +2,6 @@
 
 #include "constants.hpp"
 
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -15,7 +14,11 @@ namespace reanaut
 
 static constexpr size_t kMaxLaserScans = 1000;
 
-[[nodiscard]] static constexpr auto normalizeAngle360(float deg) -> float { return std::fmod(std::fmod(deg, 360.0F) + 360.0F, 360.0F); }
+[[nodiscard]]
+static constexpr auto normalizeAngle360(RealType deg) -> RealType
+{
+    return std::fmod(std::fmod(deg, RealType(360)) + RealType(360), RealType(360)); // NOLINT(readability-magic-numbers)
+}
 
 struct LaserScan
 {
@@ -34,7 +37,7 @@ struct LaserScan
     [[nodiscard]] auto toWorldPoint(const Pose& pose) const -> Point2;
     [[nodiscard]] auto toWorldPointSafe(const Pose& pose) const -> std::optional<Point2>;
 
-    [[nodiscard]] auto isBetween(float minDeg, float maxDeg) const
+    [[nodiscard]] auto isBetween(RealType minDeg, RealType maxDeg) const
     {
         auto nAngle = normalizeAngle360(angle);
         auto nMin   = normalizeAngle360(minDeg);
@@ -53,9 +56,9 @@ struct LaserScan
     }
 };
 
-[[nodiscard]] static constexpr auto shortestAngleDiff(float from, float to) -> float
+[[nodiscard]] static constexpr auto shortestAngleDiff(RealType from, RealType to) -> RealType
 {
-    float diff = normalizeAngle360(to) - normalizeAngle360(from);
+    auto diff = normalizeAngle360(to) - normalizeAngle360(from);
     if (diff > 180.0F) {
         diff -= 360.0F;
     } else if (diff < -180.0F) {
@@ -64,10 +67,10 @@ struct LaserScan
     return diff;
 }
 
-[[nodiscard]] auto findClosestSampleFromAngle(const std::vector<LaserScan>& scans, float targetDeg) -> LaserScan;
+[[nodiscard]] auto findClosestSampleFromAngle(const std::vector<LaserScan>& scans, RealType targetDeg) -> LaserScan;
 
 [[nodiscard]] auto findShortestMeasurement(const std::vector<LaserScan>& scans) -> LaserScan;
 
-[[nodiscard]] auto findShortestMeasurementInRange(const std::vector<LaserScan>& scans, float startDeg, float endDeg) -> LaserScan;
+[[nodiscard]] auto findShortestMeasurementInRange(const std::vector<LaserScan>& scans, RealType startDeg, RealType endDeg) -> LaserScan;
 
 } // namespace reanaut

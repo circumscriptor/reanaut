@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <numbers>
 #include <optional>
@@ -38,20 +39,21 @@ auto LaserScan::toWorldPointSafe(const Pose& pose) const -> std::optional<Point2
     return toWorldPoint(pose);
 }
 
-auto findClosestSampleFromAngle(const std::vector<LaserScan>& scans, float targetDeg) -> LaserScan
+auto findClosestSampleFromAngle(const std::vector<LaserScan>& scans, RealType targetDeg) -> LaserScan
 {
     if (scans.empty()) {
         return LaserScan{};
     }
 
-    float         minDiff = 361.0f; // Larger than any possible angle difference
-    unsigned long index   = 0;
+    // NOLINTNEXTLINE(readability-magic-numbers)
+    auto   minDiff = RealType(361); // Larger than any possible angle difference
+    size_t index   = 0;
 
-    for (unsigned long i = 0; i < scans.size(); ++i) {
+    for (size_t i = 0; i < scans.size(); ++i) {
         const auto& measurement = scans.at(i);
         // Convert measurement from radians to degrees for comparison
 
-        float diff = std::abs(shortestAngleDiff(measurement.angle, targetDeg));
+        RealType diff = std::abs(shortestAngleDiff(measurement.angle, targetDeg));
 
         if (diff < minDiff) {
             minDiff = diff;
@@ -78,12 +80,12 @@ auto findShortestMeasurement(const std::vector<LaserScan>& scans) -> LaserScan
     });
 }
 
-auto findShortestMeasurementInRange(const std::vector<LaserScan>& scans, float startDeg, float endDeg) -> LaserScan
+auto findShortestMeasurementInRange(const std::vector<LaserScan>& scans, RealType startDeg, RealType endDeg) -> LaserScan
 {
-    float minDist = std::numeric_limits<float>::max();
-    long  index   = -1;
+    RealType  minDist = std::numeric_limits<RealType>::max();
+    ptrdiff_t index   = -1;
 
-    for (unsigned long i = 0; i < scans.size(); ++i) {
+    for (size_t i = 0; i < scans.size(); ++i) {
         const auto& measurement = scans.at(i);
         if (measurement.distance <= 0.0F) {
             continue; // Ignore invalid distances
@@ -92,7 +94,7 @@ auto findShortestMeasurementInRange(const std::vector<LaserScan>& scans, float s
         if (measurement.isBetween(startDeg, endDeg)) {
             if (measurement.distance < minDist) {
                 minDist = measurement.distance;
-                index   = i;
+                index   = ptrdiff_t(i);
             }
         }
     }

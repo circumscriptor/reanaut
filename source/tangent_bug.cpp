@@ -127,7 +127,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
 
                 auto phiRobot = (isRightSide ? 90 : -90) - phiCorrectedLidar;
 
-                double phiErr = phiRobot;
+                Real phiErr = phiRobot;
                 if (isRightSide) {
                     phiErr = phiRobot - distY;
                 } else {
@@ -143,7 +143,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                 robotSpeed.angular = rotationSpeed toRad;
 
                 // --- MAINTAIN SPEED (dist_error adjust forward speed based on distance) ---
-                double distFrontLidar         = findShortestMeasurementInRange(scans, -20, 20).distance - 400;
+                Real distFrontLidar           = findShortestMeasurementInRange(scans, -20, 20).distance - 400;
                 distFrontLidar                = std::clamp(distFrontLidar, 0.0, 200.0);
                 auto distFrontLidarMultiplier = map(distFrontLidar, 0, 200, 0.05, 1);
                 std::println("\t[Tangentbug] distFrontLidarMultiplier: {:.2f}", distFrontLidarMultiplier);
@@ -153,8 +153,8 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                 wallDistanceMultiplier = map(wallDistanceMultiplier, 0, 200, 0.5, 1);
                 std::println("\t[Tangentbug] wallDistanceMultiplier: {:.2f}", wallDistanceMultiplier);
 
-                auto   wallLockedMultiplier   = m_wallLocked ? 0.8 : 0.4;
-                double forwardSpeedMulitplyer = distFrontLidarMultiplier * wallDistanceMultiplier * wallLockedMultiplier;
+                auto wallLockedMultiplier   = m_wallLocked ? 0.8 : 0.4;
+                Real forwardSpeedMulitplyer = distFrontLidarMultiplier * wallDistanceMultiplier * wallLockedMultiplier;
 
                 // If there's a warning, reduce speed
                 if (std::fabs(shortLidar.angle) <= 60) {
@@ -209,15 +209,15 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
     return robotSpeed.computeControl();
 }
 
-auto TangentBug::angleToTarget(Point2 location) -> double
+auto TangentBug::angleToTarget(Point2 location) const -> Real
 {
-    float dx = m_destination.x - location.x;
-    float dy = m_destination.y - location.y;
+    const auto dx = m_destination.x - location.x;
+    const auto dy = m_destination.y - location.y;
 
     // atan2 returns radians, convert to degrees
     // (Assuming standard math coordinates: 0 is East/Right, CCW)
-    float angleRad = std::atan2(dy, dx);
-    auto  angleDeg = normalizeAngle360(angleRad toDeg);
+    const auto angleRad = std::atan2(dy, dx);
+    const auto angleDeg = normalizeAngle360(angleRad toDeg);
 
     return angleDeg;
 }
