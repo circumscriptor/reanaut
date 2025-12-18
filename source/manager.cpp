@@ -184,7 +184,6 @@ void Manager::update()
     // } else {
     //     m_command.baseControl(0, 0);
     // }
-    
 
     if (m_returnToHome) {
         auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime(), m_detector.obstacles());
@@ -263,6 +262,9 @@ void Manager::run()
             ImGui::Checkbox("Visualize traversability", &m_enableVisualizeTraversability);
             ImGui::Checkbox("Visualize wavefront", &m_enableVisualizeWavefront);
             ImGui::Checkbox("Return to home", &m_returnToHome);
+            if (ImGui::Button("Update wavefront")) {
+                m_updatePath = true;
+            }
         }
         ImGui::End();
 
@@ -295,8 +297,9 @@ void Manager::updateCamera()
         m_elevation.update(m_depth);
         m_traversability.update(m_elevation);
         if (m_updatePath) {
-            m_wavefront.findPath(m_traversability, m_start, m_target);
-            // m_updatePath = false;
+            m_wavefront.update(m_traversability, m_start, m_target);
+            std::println("wavefront points: {}", m_wavefront.path().size());
+            m_updatePath = false;
         }
     }
 

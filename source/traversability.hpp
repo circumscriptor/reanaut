@@ -14,8 +14,8 @@ class TraversabilityGrid : public Grid
 public:
 
     // Kobuki Constraints
-    static constexpr Real kMaxStepHeight = Real(0.25); // Max curb height
-    static constexpr Real kMaxSlopeAngle = Real(0.35); // [rad]
+    static constexpr Real kMaxStepHeight = Real(0.5);  // Max curb height
+    static constexpr Real kMaxSlopeAngle = Real(0.78); // [rad]
 
     // Main Algorithm: Converts Elevation -> Cost (0.0 to 1.0)
     void update(const ElevationGrid& elevation);

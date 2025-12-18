@@ -6,68 +6,122 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
+#include <limits>
+#include <print>
 
 namespace reanaut
 {
 
 void TraversabilityGrid::update(const ElevationGrid& elevation)
 {
-    const auto& elev     = elevation.grid();
-    const Real  maxSlope = std::tan(kMaxSlopeAngle);
+    // 1. Safety Checks
+    if (width() != elevation.width() || height() != elevation.height()) {
+        std::println("SIZE MISMATCH");
+        return;
+    }
 
-    // Iterate grid (Skipping 1-pixel border to avoid boundary checks)
-    // This leaves the border cells as 0.0 (or you could set them to 1.0 safety)
-    for (int y = 1; y < height() - 1; ++y) {
-        for (int x = 1; x < width() - 1; ++x) {
+    const auto&  elev = elevation.grid();
+    const size_t w    = width();
+    const size_t h    = height();
+    const Real   res  = resolution();
 
-            const size_t centerIdx = (size_t(y) * width()) + x;
-            const Real   zCenter   = elev[centerIdx];
+    // Avoid division by zero
+    const Real maxSlopeVal = (kMaxSlopeAngle > 0.0) ? std::tan(kMaxSlopeAngle) : std::numeric_limits<Real>::epsilon();
+    const Real maxStepVal  = (kMaxStepHeight > 0.0) ? kMaxStepHeight : std::numeric_limits<Real>::epsilon();
 
-            // --- 1. Fetch Neighbors ---
-            const Real zUp    = elev[(size_t(y - 1) * width()) + x];
-            const Real zDown  = elev[(size_t(y + 1) * width()) + x];
-            const Real zLeft  = elev[centerIdx - 1];
-            const Real zRight = elev[centerIdx + 1];
+    // Helper: Checks if a specific elevation value is valid (observed data)
+    auto isValid = [](Real z) {
+        return std::isfinite(z) && z > -1000.0; // Adjust sentinel threshold as needed
+    };
 
-            // --- 2. Metric 1: Max Height Difference (Step) ---
-            const Real maxDiff = std::max({
-                0.0,
-                std::abs(zCenter - zUp),
-                std::abs(zCenter - zDown),
-                std::abs(zCenter - zLeft),
-                std::abs(zCenter - zRight),
-            });
+    // 2. Clear / Reset Grid (Safe default: Unknown/Obstacle)
+    // Using 0.0 (Free) or 1.0 (Obstacle) depends on your planner.
+    // Usually, borders should be walls (1.0).
+    std::fill(grid().begin(), grid().end(), Real(1.0));
 
-            // Normalize Step Cost
-            Real stepCost = Real(0.0);
-            if (maxDiff >= kMaxStepHeight) {
-                stepCost = Real(1.0); // Too high to climb
-            } else {
-                stepCost = maxDiff / kMaxStepHeight; // Linear difficulty
+    // 3. Iterate Inner Grid
+    // We maintain 'idx' manually to avoid (y * w + x) multiplication every iter.
+    for (size_t y = 1; y < h - 1; ++y) {
+
+        size_t idx = (y * w) + 1; // Start at x=1
+
+        for (size_t x = 1; x < w - 1; ++x, ++idx) {
+
+            const Real zCenter = elev[idx];
+
+            // If the ground itself is a hole, it's non-traversable.
+            if (!isValid(zCenter)) {
+                setAtOffset(idx, Real(1.0));
+                continue;
             }
 
-            // --- 3. Metric 2: Slope (Tilt) ---
-            // Central Difference
-            const Real dzdx = (zRight - zLeft) / (Real(2.0) * resolution());
-            const Real dzdy = (zDown - zUp) / (Real(2.0) * resolution());
+            // Neighbor indices
+            const size_t idxUp    = idx - w;
+            const size_t idxDown  = idx + w;
+            const size_t idxLeft  = idx - 1;
+            const size_t idxRight = idx + 1;
 
-            // Gradient Magnitude
-            const Real slopeMag = std::hypot(dzdx, dzdy);
+            const Real zUp    = elev[idxUp];
+            const Real zDown  = elev[idxDown];
+            const Real zLeft  = elev[idxLeft];
+            const Real zRight = elev[idxRight];
 
-            Real slopeCost = Real(0.0);
-            if (slopeMag >= maxSlope) {
-                slopeCost = Real(1.0); // Too steep
-            } else {
-                slopeCost = slopeMag / maxSlope;
-            }
+            // --- Metric 1: Step Height (Roughness) ---
+            // We only check step height against VALID neighbors.
+            // If a neighbor is void, we assume a high cost (edge of world) or ignore it.
+            // Here we treat voids as "walls" to be safe.
+            Real maxStepDiff = 0.0;
 
-            // --- 4. Combination (Max Rule) ---
-            setAtOffset(centerIdx, std::max(stepCost, slopeCost));
-            // setAtOffset(centerIdx, stepCost);
-            // if ((stepCost > 0 && stepCost < 1) || (slopeCost > 0 && stepCost < 1)) {
-            //     std::println("step cost: {}, slope cost: {}", stepCost, slopeCost);
-            // }
+            auto checkStep = [&](Real zNeighbor) {
+                if (isValid(zNeighbor)) {
+                    maxStepDiff = std::max(maxStepDiff, std::abs(zCenter - zNeighbor));
+                } else {
+                    // Option A: Treat void as infinite wall
+                    // maxStepDiff = std::max(maxStepDiff, kMaxStepHeight * 2);
+
+                    // Option B: Ignore void (risk of driving off cliff)
+                    // Option C: Treat as cliff (Cost 1.0) handled via logic below
+                }
+            };
+
+            checkStep(zUp);
+            checkStep(zDown);
+            checkStep(zLeft);
+            checkStep(zRight);
+
+            Real stepCost = std::clamp(maxStepDiff / maxStepVal, Real(0.0), Real(1.0));
+
+            // --- Metric 2: Slope (Gradient) ---
+            // Robust Finite Difference: Handle missing data by falling back
+            // from Central Difference (2*res) to Forward/Backward (1*res).
+
+            auto getGradient = [&](Real zPrev, Real zNext) -> Real {
+                bool hasPrev = isValid(zPrev);
+                bool hasNext = isValid(zNext);
+
+                if (hasPrev && hasNext) {
+                    // Central Difference
+                    return (zNext - zPrev) / (Real(2.0) * res);
+                } else if (hasNext) {
+                    // Forward Difference
+                    return (zNext - zCenter) / res;
+                } else if (hasPrev) {
+                    // Backward Difference
+                    return (zCenter - zPrev) / res;
+                } else {
+                    // Isolated point (Peak/Valley)
+                    return Real(0.0);
+                }
+            };
+
+            const Real dzdx = getGradient(zLeft, zRight);
+            const Real dzdy = getGradient(zUp, zDown);
+
+            const Real slopeMag  = std::hypot(dzdx, dzdy);
+            const Real slopeCost = std::clamp(slopeMag / maxSlopeVal, Real(0.0), Real(1.0));
+
+            // --- Combination ---
+            setAtOffset(idx, std::max(stepCost, slopeCost));
         }
     }
 }

@@ -6,7 +6,6 @@
 #include "particle.hpp"
 #include "polygon.hpp"
 
-#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <span>
@@ -58,14 +57,11 @@ private:
 
     Navigator m_pointFollower;
 
-    [[nodiscard]] static auto lengthSq(Real x, Real y) noexcept -> Real { return (x * x) + (y * y); }
-    [[nodiscard]] static auto length(Real x, Real y) noexcept -> Real { return std::sqrt(lengthSq(x, y)); }
-    [[nodiscard]] static auto distanceSq(Real x1, Real y1, Real x2, Real y2) noexcept -> Real { return lengthSq(x2 - x1, y2 - y1); }
-    [[nodiscard]] static auto distance(Point2 A, Point2 B) noexcept -> Real { return distance(A.x, A.y, B.x, B.y); }
-    [[nodiscard]] static auto distance(Real x1, Real y1, Real x2, Real y2) noexcept -> Real { return std::sqrt(distanceSq(x1, y1, x2, y2)); }
+    // Use `Point2` member functions (`operator-`, `length`, `lengthSq`, `distance`) instead
+    // of duplicating vector math helpers here.
 
     [[nodiscard]] auto isPathToDestinationClear(const std::vector<LaserScan>& measurement) const -> bool;
-    auto decideFollowDirection(const  std::vector<LaserScan>& measurement, std::span<const Polygon> wallPolygons, Point2 robotPos) -> State;
+    auto               decideFollowDirection(const std::vector<LaserScan>& measurement, std::span<const Polygon> wallPolygons, Point2 robotPos) -> State;
 
     auto map(auto value, auto inMin, auto inMax, auto outMin, auto outMax) { return ((value - inMin) * (outMax - outMin) / (inMax - inMin)) + outMin; }
 

@@ -6,6 +6,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/hal/interface.h>
 #include <opencv2/core/mat.hpp>
+#include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include <cstddef>
@@ -22,8 +23,19 @@ auto Camera::capture() -> const cv::Mat&
 {
     // m_capture >> m_buffer1;
     m_capture >> m_buffer2;
-    // cv::threshold(m_buffer1, m_buffer2, 100.0, 0.0, cv::THRESH_TOZERO_INV);
+    if (m_buffer2.empty()) {
+        return m_buffer2;
+    }
     cv::flip(m_buffer2, m_buffer2, -1);
+    cv::cvtColor(m_buffer2, m_buffer1, cv::COLOR_BGR2GRAY);
+    // cv::threshold(m_buffer1, m_buffer2, 100.0, 0.0, cv::THRESH_TOZERO_INV);
+
+    // cv::medianBlur(m_buffer1, m_buffer2, 5);
+
+    // cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
+    // cv::morphologyEx(m_buffer1, m_buffer2, cv::MORPH_OPEN, kernel);
+    // cv::bilateralFilter(m_buffer1, m_buffer2, 9, 75, 75);
+    cv::GaussianBlur(m_buffer1, m_buffer2, cv::Size(7, 7), 1.5);
     return m_buffer2;
 }
 
@@ -43,7 +55,9 @@ void CameraTexture::update(const cv::Mat& sourceMat)
         return;
     }
 
-    if (sourceMat.type() == CV_8UC3) {
+    if (sourceMat.type() == CV_8UC1) {
+        cv::cvtColor(sourceMat, m_staging, cv::COLOR_GRAY2RGBA);
+    } else if (sourceMat.type() == CV_8UC3) {
         cv::cvtColor(sourceMat, m_staging, cv::COLOR_BGR2RGBA);
     } else {
         std::println(stderr, "Unsupported Mat type for texture upload");

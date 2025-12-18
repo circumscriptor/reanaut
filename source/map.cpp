@@ -193,6 +193,7 @@ void Map::drawObstacles(ImDrawList* drawList, ImVec2 pos, float side, float scal
     }
 }
 
+// NOLINTNEXTLINE
 void Map::drawOrigin(ImDrawList* drawList, ImVec2 pos, float side, float scale)
 {
     const ImVec2 center(pos.x + (side * 0.5F), pos.y + (side * 0.5F));

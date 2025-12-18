@@ -43,12 +43,11 @@ auto Navigator::isActive() const noexcept -> bool { return m_active; }
 
 auto Navigator::targetReached() const noexcept -> bool { return m_targetReached; }
 
-
 void Navigator::setGoal(const Point2& goal)
 {
-    m_targetX = goal.x;
-    m_targetY = goal.y;
-    m_active  = true;
+    m_targetX       = goal.x;
+    m_targetY       = goal.y;
+    m_active        = true;
     m_targetReached = false;
     m_translate.reset();
     m_rotate.reset();
@@ -98,17 +97,16 @@ auto Navigator::update(const Pose& pose, Real dt) -> std::optional<Velocity>
         return std::nullopt;
     }
 
-    const Real dx       = m_targetX - pose.x;
-    const Real dy       = m_targetY - pose.y;
-    const Real distance = std::sqrt((dx * dx) + (dy * dy));
+    const Point2 target{.x = m_targetX, .y = m_targetY};
+    const Real   distance = target.distance(pose);
 
     if (distance < m_distanceTolerance) {
-        m_active = false;
+        m_active        = false;
         m_targetReached = true;
         return std::nullopt;
     }
 
-    const Real heading      = std::atan2(dy, dx);
+    const Real heading      = std::atan2(target.y - pose.y, target.x - pose.x);
     const Real newOmega     = m_rotate.computeInRange(heading, pose.theta, dt);
     const Real headingError = m_rotate.getError();
     const Real projection   = std::max(std::cos(headingError), 0.0);

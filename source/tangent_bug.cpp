@@ -35,7 +35,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
     robotSpeed.angular = 0;
     robotSpeed.linear  = 0;
 
-    auto currentDistToDest = distance(m_destination.x, m_destination.y, robotPosition.x, robotPosition.y);
+    auto currentDistToDest = m_destination.distance(Point2{robotPosition.x, robotPosition.y});
 
     if (!(dt <= std::numeric_limits<RealType>::epsilon())) { // returns
         switch (m_state) {
@@ -55,7 +55,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                     robotStop;
                     m_locationBeforeDiversion.x = robotPosition.x;
                     m_locationBeforeDiversion.y = robotPosition.y;
-                    m_shortestDistanceToDest    = distance(m_destination.x, m_destination.y, m_locationBeforeDiversion.x, m_locationBeforeDiversion.y);
+                    m_shortestDistanceToDest    = m_destination.distance(m_locationBeforeDiversion);
                     m_state                     = State::DecideWallFollow;
                 } else {
                     std::println("\t[Tangentbug] APPROACHING TARGET");
@@ -194,7 +194,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                     std::println("\t[Tangentbug] STATE: Switching to FollowDestination");
                     robotStop;
                     m_locationBeforeDiversion = robotPosition;
-                    m_shortestDistanceToDest  = distance(m_destination, m_locationBeforeDiversion);
+                    m_shortestDistanceToDest  = m_destination.distance(m_locationBeforeDiversion);
 
                     m_state = State::FollowDestination;
                     // m_state = State::Invalid;
@@ -224,6 +224,8 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
 
 auto TangentBug::decideFollowDirection(const std::vector<LaserScan>& measurement, std::span<const Polygon> wallPolygons, Point2 robotPos) -> TangentBug::State
 {
+    (void)measurement;
+
     // If no obstacles are detected, we cannot decide on a wall-following direction
     if (wallPolygons.empty()) {
         return State::Invalid;
