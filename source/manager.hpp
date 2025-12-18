@@ -88,7 +88,6 @@ private:
     bool                      m_enableVisualizeElevation{true};
     bool                      m_enableVisualizeTraversability{true};
     bool                      m_enableVisualizeWavefront{true};
-    bool                      m_useManualNavigation{true};
     bool                      m_returnToHome{false};
     bool                      m_updatePath{true};
     Point2                    m_start;

@@ -262,7 +262,6 @@ void Manager::run()
             ImGui::Checkbox("Visualize elevation", &m_enableVisualizeElevation);
             ImGui::Checkbox("Visualize traversability", &m_enableVisualizeTraversability);
             ImGui::Checkbox("Visualize wavefront", &m_enableVisualizeWavefront);
-            ImGui::Checkbox("Manual control", &m_useManualNavigation);
             ImGui::Checkbox("Return to home", &m_returnToHome);
         }
         ImGui::End();

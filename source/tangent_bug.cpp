@@ -79,8 +79,8 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
             }
 
             case State::DecideWallFollow: {
-                m_state      = decideFollowDirection(scans, wallPolygons, robotPosition);
-                //m_state      = State::FollowWallR;
+                m_state = decideFollowDirection(scans, wallPolygons, robotPosition);
+                // m_state      = State::FollowWallR;
                 m_wallLocked = false;
                 break;
             }
@@ -185,10 +185,12 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
 
                 // bool targetDirectionClear = false;
                 // findShortestMeasurementInRange(scans, angleToTarget(robotPosition) -10, angleToTarget(robotPosition) + 10).distance;
+                auto sampleToDestination = findClosestSampleFromAngle(scans, angleToTarget(robotPosition));
+                bool pathClear           = sampleToDestination.distance < currentDistToDest && sampleToDestination.angle < 4;
 
                 if ((currentDistToDest < m_shortestDistanceToDest &&
                      (findShortestMeasurementInRange(scans, -90, 90).distance > kDesiredWallDistanceMm + 100)) ||
-                    findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance < currentDistToDest) {
+                    pathClear) {
                     std::println("\t[Tangentbug] STATE: Switching to FollowDestination");
                     robotStop;
                     m_locationBeforeDiversion = robotPosition;
@@ -232,7 +234,7 @@ auto TangentBug::decideFollowDirection(const std::vector<LaserScan>& measurement
     RealType minTotalDistR = std::numeric_limits<RealType>::max();
 
     // Robot's current position from its pose
-    //Point2 robotPos = {m_pose.x, m_pose.y};
+    // Point2 robotPos = {m_pose.x, m_pose.y};
 
     for (const auto& poly : wallPolygons) {
         // poly.getTangents returns a pair: {minAngleVertex, maxAngleVertex}
@@ -243,14 +245,14 @@ auto TangentBug::decideFollowDirection(const std::vector<LaserScan>& measurement
 
         // Calculate heuristic distance for the Left path: dist(Robot->Edge) + dist(Edge->Goal)
         RealType distPathL = robotPos.distance(leftEdge) + leftEdge.distance(m_destination);
-        minTotalDistL = std::min(distPathL, minTotalDistL);
+        minTotalDistL      = std::min(distPathL, minTotalDistL);
 
         // Calculate heuristic distance for the Right path: dist(Robot->Edge) + dist(Edge->Goal)
         RealType distPathR = robotPos.distance(rightEdge) + rightEdge.distance(m_destination);
-        minTotalDistR = std::min(distPathR, minTotalDistR);
+        minTotalDistR      = std::min(distPathR, minTotalDistR);
     }
 
-    // According to point 2 in the instructions: 
+    // According to point 2 in the instructions:
     // "aim at the obstacle's edge so that the Euclidean distance that the robot has to travel is as small as possible"
     if (minTotalDistL < minTotalDistR) {
         return State::FollowWallL;
