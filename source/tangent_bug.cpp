@@ -183,8 +183,9 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                 // bool targetDirectionClear = false;
                 // findShortestMeasurementInRange(scans, angleToTarget(robotPosition) -10, angleToTarget(robotPosition) + 10).distance;
 
-                if (currentDistToDest < m_shortestDistanceToDest && findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance < currentDistToDest /*&&
-                    findShortestMeasurementInRange(scans, -90, 90).distance > kDesiredWallDistanceMm + 100*/) {
+                if ((currentDistToDest < m_shortestDistanceToDest &&
+                     (findShortestMeasurementInRange(scans, -90, 90).distance > kDesiredWallDistanceMm + 100)) ||
+                    findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance < currentDistToDest) {
                     std::println("\t[Tangentbug] STATE: Switching to FollowDestination");
                     robotStop;
                     m_locationBeforeDiversion = robotPosition;
@@ -214,6 +215,13 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
 
     std::println("\t[Tangentbug] \t[Tangentbug] returning: linear={}, angular={}", robotSpeed.linear, robotSpeed.angular);
     return robotSpeed.computeControl();
+}
+
+
+auto TangentBug::decideFollowDirection(const  std::vector<LaserScan>& measurement) -> TangentBug::State {
+      State decision = State::Invalid;
+
+    return decision;
 }
 
 auto TangentBug::angleToTarget(Point2 location) const -> Real

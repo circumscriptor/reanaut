@@ -290,7 +290,7 @@ void Manager::updateCamera()
 void Manager::processKeyboard()
 {
     const double kManualLinearSpeed  = 0.3; // m/s
-    const double kManualAngularSpeed = 1.2; // rad/s
+    const double kManualAngularSpeed = 1.2/2; // rad/s
 
     // Check Linear (Forward/Backward)
     if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) {

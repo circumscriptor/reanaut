@@ -63,6 +63,7 @@ private:
     [[nodiscard]] static auto distance(Real x1, Real y1, Real x2, Real y2) noexcept -> Real { return std::sqrt(distanceSq(x1, y1, x2, y2)); }
 
     [[nodiscard]] auto isPathToDestinationClear(const std::vector<LaserScan>& measurement) const -> bool;
+    auto decideFollowDirection(const  std::vector<LaserScan>& measurement) -> State;
 
     auto map(auto value, auto inMin, auto inMax, auto outMin, auto outMax) { return ((value - inMin) * (outMax - outMin) / (inMax - inMin)) + outMin; }
 
