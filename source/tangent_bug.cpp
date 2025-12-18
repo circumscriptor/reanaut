@@ -177,10 +177,11 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                 std::println("\t[Tangentbug] findClosestSampleFromAngle(angleToTarget()).distance: {:.2f}",
                              findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance);
                 std::println("\t[Tangentbug] findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance {:.2f} < currentDistToDest {:.2f} = {}",
-                             findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance, currentDistToDest, findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance < currentDistToDest);
+                             findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance, currentDistToDest,
+                             findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance < currentDistToDest);
 
-                //bool targetDirectionClear = false;
-                //findShortestMeasurementInRange(scans, angleToTarget(robotPosition) -10, angleToTarget(robotPosition) + 10).distance;
+                // bool targetDirectionClear = false;
+                // findShortestMeasurementInRange(scans, angleToTarget(robotPosition) -10, angleToTarget(robotPosition) + 10).distance;
 
                 if (currentDistToDest < m_shortestDistanceToDest && findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance < currentDistToDest /*&&
                     findShortestMeasurementInRange(scans, -90, 90).distance > kDesiredWallDistanceMm + 100*/) {
@@ -197,6 +198,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
 
             case State::DoneDoneDone:
                 std::println("\t[Tangentbug] \033[95mDONE! DONE! DONE!\033[0m");
+                m_isDoneDoneDone = true;
                 break;
 
             default:

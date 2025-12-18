@@ -40,7 +40,7 @@ Manager::Manager(const Options& options)
     scheduleNextUpdate();
     scheduleNextCapture();
 
-    m_tangentBug.setDestination(1, 0);
+    m_tangentBug.setDestination(0, 0);
 
     m_kobuki.asyncRecv();
     m_laser.asyncRecv();
@@ -177,18 +177,14 @@ void Manager::update()
     //     m_command.baseControl(0, 0);
     // }
 
-    if (m_useManualNavigation) {
-        auto [speed, radius] = m_velocity.computeControl();
-
-        m_command.baseControl(speed, radius);
-
-        if (m_command.size() > 0) {
-            m_kobuki.asyncSend(m_command);
-        }
-    } else {
+    if (m_returnToHome) {
         auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime());
-        std::println("[Manager] tangentbug returned: speed={}, radius={}", speed, radius);
+        // std::println("[Manager] tangentbug returned: speed={}, radius={}", speed, radius);
 
+        if (m_tangentBug.isDoneDoneDone()) {
+            m_returnToHome = false;
+            m_tangentBug.setDestination(0, 0);
+        }
         // Safety
         static bool s_informed       = false;
         const auto  shortestDistance = findShortestMeasurement(m_scans).distance;
@@ -207,6 +203,14 @@ void Manager::update()
             if (m_command.size() > 0) {
                 m_kobuki.asyncSend(m_command);
             }
+        }
+    } else {
+        auto [speed, radius] = m_velocity.computeControl();
+
+        m_command.baseControl(speed, radius);
+
+        if (m_command.size() > 0) {
+            m_kobuki.asyncSend(m_command);
         }
     }
     scheduleNextUpdate();
@@ -247,7 +251,7 @@ void Manager::run()
             ImGui::Checkbox("Visualize cloud", &m_enableVisualizeCloud);
             ImGui::Checkbox("Visualize obstacles", &m_enableVisualizeObstacles);
             ImGui::Checkbox("Visualize elevation", &m_enableVisualizeElevation);
-            ImGui::Checkbox("Manual control", &m_useManualNavigation);
+            ImGui::Checkbox("Return to home", &m_returnToHome);
         }
         ImGui::End();
 

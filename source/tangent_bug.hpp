@@ -24,11 +24,14 @@ public:
 
     void setDestination(Real destinationX, Real destinationY)
     {
-        m_destination = {.x = destinationX, .y = destinationY};
-        m_state       = State::FollowDestination;
+        m_destination    = {.x = destinationX, .y = destinationY};
+        m_state          = State::FollowDestination;
+        m_isDoneDoneDone = false;
     };
 
     auto process(const std::vector<LaserScan>& scans, Particle position, RealType dt) -> std::pair<uint16_t, uint16_t>;
+
+    [[nodiscard]] auto isDoneDoneDone() const -> bool { return m_isDoneDoneDone; }
 
 private:
 
@@ -48,6 +51,8 @@ private:
 
     Real m_shortestDistanceToDest = std::numeric_limits<Real>::max();
     bool m_wallLocked             = false;
+
+    bool m_isDoneDoneDone = false;
 
     Navigator m_pointFollower;
 
