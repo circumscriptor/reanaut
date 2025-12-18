@@ -133,6 +133,7 @@ void Map::draw(SDL_GPUCommandBuffer* commandBuffer)
 
         const auto scale = side / float(m_texture.width());
         drawObstacles(drawList, pos, side, scale);
+        drawOrigin(drawList, pos, side, scale);
         drawRobot(drawList, pos, side, scale);
 
         // for (const auto& [p1, p2] : m_lines) {
@@ -169,6 +170,22 @@ void Map::drawObstacles(ImDrawList* drawList, ImVec2 pos, float side, float scal
             drawList->AddCircleFilled(point, 3.0F, IM_COL32(255, 0, 0, 255)); // NOLINT
         }
     }
+}
+
+void Map::drawOrigin(ImDrawList* drawList, ImVec2 pos, float side, float scale)
+{
+    const ImVec2 center(pos.x + (side * 0.5F), pos.y + (side * 0.5F));
+
+    // Draw red "X" at the origin (0,0)
+    const float  crossSize = float(m_robotSize) * scale * 0.5F; // Adjust size of the X as needed
+    const ImVec2 topLeft(center.x - crossSize, center.y - crossSize);
+    const ImVec2 bottomLeft(center.x - crossSize, center.y + crossSize);
+    const ImVec2 topRight(center.x + crossSize, center.y - crossSize);
+    const ImVec2 bottomRight(center.x + crossSize, center.y + crossSize);
+
+    // Draw diagonal lines forming the X
+    drawList->AddLine(topLeft, bottomRight, IM_COL32(255, 0, 0, 255), 2.0F); // Diagonal from top-left to bottom-right
+    drawList->AddLine(bottomLeft, topRight, IM_COL32(255, 0, 0, 255), 2.0F); // Diagonal from bottom-left to top-right
 }
 
 void Map::drawRobot(ImDrawList* drawList, ImVec2 pos, float side, float scale)

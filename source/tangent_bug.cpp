@@ -77,7 +77,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
 
             case State::DecideWallFollow: {
                 // _state      = decideFollowDirection(scans);
-                m_state      = State::FollowWallL;
+                m_state      = State::FollowWallR;
                 m_wallLocked = false;
                 break;
             }
@@ -145,7 +145,7 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                 // --- MAINTAIN SPEED (dist_error adjust forward speed based on distance) ---
                 Real distFrontLidar           = findShortestMeasurementInRange(scans, -20, 20).distance - 400;
                 distFrontLidar                = std::clamp(distFrontLidar, 0.0, 200.0);
-                auto distFrontLidarMultiplier = map(distFrontLidar, 0, 200, 0.05, 1);
+                auto distFrontLidarMultiplier = map(distFrontLidar, 0, 200, 0.06, 1);
                 std::println("\t[Tangentbug] distFrontLidarMultiplier: {:.2f}", distFrontLidarMultiplier);
 
                 auto wallDistanceMultiplier = std::clamp(fabs(shortLidar.distance - kDesiredWallDistanceMm), 0.0, 200.0);
@@ -176,9 +176,14 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
                 std::println("\t[Tangentbug] angleToTarget: {:.2f}", angleToTarget(robotPosition));
                 std::println("\t[Tangentbug] findClosestSampleFromAngle(angleToTarget()).distance: {:.2f}",
                              findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance);
+                std::println("\t[Tangentbug] findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance {:.2f} < currentDistToDest {:.2f} = {}",
+                             findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance, currentDistToDest, findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance < currentDistToDest);
 
-                if (currentDistToDest < m_shortestDistanceToDest && findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance > 500 &&
-                    findShortestMeasurementInRange(scans, -90, 90).distance > kDesiredWallDistanceMm + 100) {
+                //bool targetDirectionClear = false;
+                //findShortestMeasurementInRange(scans, angleToTarget(robotPosition) -10, angleToTarget(robotPosition) + 10).distance;
+
+                if (currentDistToDest < m_shortestDistanceToDest && findClosestSampleFromAngle(scans, angleToTarget(robotPosition)).distance < currentDistToDest /*&&
+                    findShortestMeasurementInRange(scans, -90, 90).distance > kDesiredWallDistanceMm + 100*/) {
                     std::println("\t[Tangentbug] STATE: Switching to FollowDestination");
                     robotStop;
                     m_locationBeforeDiversion = robotPosition;

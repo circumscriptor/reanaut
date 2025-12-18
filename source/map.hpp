@@ -36,6 +36,7 @@ public:
 protected:
 
     void drawObstacles(ImDrawList* drawList, ImVec2 pos, float side, float scale);
+    void drawOrigin(ImDrawList* drawList, ImVec2 pos, float side, float scale);
     void drawRobot(ImDrawList* drawList, ImVec2 pos, float side, float scale);
 
 private:
