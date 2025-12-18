@@ -4,6 +4,7 @@
 #include "canvas.hpp"
 #include "cloud.hpp"
 #include "connections.hpp"
+#include "constants.hpp"
 #include "depth.hpp"
 #include "elevation.hpp"
 #include "kobuki.hpp"
@@ -17,6 +18,7 @@
 #include "tangent_bug.hpp"
 #include "time.hpp"
 #include "traversability.hpp"
+#include "wavefront.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
@@ -84,9 +86,13 @@ private:
     bool                      m_enableVisualizeCloud{true};
     bool                      m_enableVisualizeObstacles{true};
     bool                      m_enableVisualizeElevation{true};
-    bool                      m_enableVisualizeTraversability{false};
+    bool                      m_enableVisualizeTraversability{true};
+    bool                      m_enableVisualizeWavefront{true};
     bool                      m_useManualNavigation{true};
     bool                      m_returnToHome{false};
+    bool                      m_updatePath{true};
+    Point2                    m_start;
+    Point2                    m_target;
 
     Canvas                         m_canvas;
     KobukiConnection               m_kobuki;
@@ -110,5 +116,7 @@ private:
     DepthProcessor                 m_depth;
     ElevationGrid                  m_elevation;
     TraversabilityGrid             m_traversability;
+    WavefrontPlanner               m_wavefront;
 };
+
 } // namespace reanaut

@@ -6,6 +6,7 @@
 #include "occupancy.hpp"
 #include "particle.hpp"
 #include "traversability.hpp"
+#include "wavefront.hpp"
 
 #include <SDL3/SDL_gpu.h>
 #include <imgui.h>
@@ -61,6 +62,16 @@ void Map::update(const TraversabilityGrid& traversability)
     const size_t size = std::min(grid.size(), map.size());
     for (size_t i = 0; i < size; ++i) {
         map[i] = getTraversabilityColor(grid[i]);
+    }
+}
+
+void Map::update(const WavefrontPlanner& wavefront)
+{
+    auto         grid = wavefront.grid();
+    auto         map  = m_texture.pixels();
+    const size_t size = std::min(grid.size(), map.size());
+    for (size_t i = 0; i < size; ++i) {
+        map[i] = getWaveColor(grid[i]);
     }
 }
 

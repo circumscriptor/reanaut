@@ -31,7 +31,7 @@ void ElevationGrid::updateCellByIndex(Index index, Real measuredZ)
 
     auto& currentZ = at(index);
     // currentZ       = std::max(currentZ, measuredZ);
-    currentZ = measuredZ;
+    currentZ = std::clamp(measuredZ, 0.0, 1.0);
 }
 
 void ElevationGrid::updateCell(Real pointX, Real pointY, Real pointZ)

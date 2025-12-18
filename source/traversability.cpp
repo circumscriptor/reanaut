@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <print>
 
 namespace reanaut
 {
@@ -66,9 +65,9 @@ void TraversabilityGrid::update(const ElevationGrid& elevation)
             // --- 4. Combination (Max Rule) ---
             setAtOffset(centerIdx, std::max(stepCost, slopeCost));
             // setAtOffset(centerIdx, stepCost);
-            if ((stepCost > 0 && stepCost < 1) || (slopeCost > 0 && stepCost < 1)) {
-                std::println("step cost: {}, slope cost: {}", stepCost, slopeCost);
-            }
+            // if ((stepCost > 0 && stepCost < 1) || (slopeCost > 0 && stepCost < 1)) {
+            //     std::println("step cost: {}, slope cost: {}", stepCost, slopeCost);
+            // }
         }
     }
 }

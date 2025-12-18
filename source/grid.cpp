@@ -36,10 +36,26 @@ void GridBase::gridToWorld(Index index, Point2& world) const
     world.y = m_originY + (index.y + 0.5) * m_resolution;
 }
 
+auto GridBase::gridToWorld(Index index) const -> Point2
+{
+    Point2 result{};
+    gridToWorld(index, result);
+    return result;
+}
+
 GridBase::GridBase() : m_width(kMapWidth), m_height(kMapHeight), m_resolution(kMapResolution), m_originX(kMapOriginX), m_originY(kMapOriginY) {}
 
 template <>
 void TGrid<bool>::updateCell(Index index, bool change)
+{
+    int idx = (index.y * width()) + index.x;
+    if (idx >= 0 && idx < int(m_grid.size())) {
+        m_grid[idx] = change;
+    }
+}
+
+template <>
+void TGrid<int>::updateCell(Index index, int change)
 {
     int idx = (index.y * width()) + index.x;
     if (idx >= 0 && idx < int(m_grid.size())) {
@@ -58,13 +74,19 @@ void TGrid<RealType>::updateCell(Index index, Real change)
 }
 
 template <>
-inline auto TGrid<bool>::isObstacle(Index index) const -> bool
+auto TGrid<bool>::isObstacle(Index index) const -> bool
 {
     return m_grid[size_t(index.y * width()) + index.x];
 }
 
 template <>
-inline auto TGrid<RealType>::isObstacle(Index index) const -> bool
+auto TGrid<int>::isObstacle(Index index) const -> bool
+{
+    return m_grid[size_t(index.y * width()) + index.x] == 1;
+}
+
+template <>
+auto TGrid<RealType>::isObstacle(Index index) const -> bool
 {
     return m_grid[size_t(index.y * width()) + index.x] > 2.0;
 }

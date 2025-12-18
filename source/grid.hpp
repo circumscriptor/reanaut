@@ -36,6 +36,8 @@ public:
     // Convert Grid to World (for raycasting check)
     void gridToWorld(Index index, Point2& world) const;
 
+    [[nodiscard]] auto gridToWorld(Index index) const -> Point2;
+
 private:
 
     int  m_width;
@@ -65,6 +67,8 @@ public:
     [[nodiscard]] auto getDistance(const Pose& pose, Real maxDistance = kLidarMaxRange) const -> Real;
 
 protected:
+
+    [[nodiscard]] auto grid() -> std::span<Type> { return m_grid; }
 
     [[nodiscard]]
     auto isObstacle(Index index) const -> bool;
@@ -160,7 +164,8 @@ inline void TGrid<Type>::setAtOffset(size_t offset, Type value)
     m_grid[offset] = value;
 }
 
-using Grid       = TGrid<RealType>;
-using BinaryGrid = TGrid<bool>;
+using Grid        = TGrid<RealType>;
+using BinaryGrid  = TGrid<bool>;
+using IntegerGrid = TGrid<int>;
 
 } // namespace reanaut

@@ -122,6 +122,10 @@ void Manager::update()
         if (result) {
             m_filter.prediction(result->linear, result->angular, m_time.getDeltaTime());
             m_bestEstimate = m_filter.getBestEstimate();
+
+            // wavefront
+            m_target = {.x = 0.0, .y = 0.0};
+            m_start  = m_bestEstimate;
         }
     } else {
         ++m_skippedFeedbackCounter;
@@ -140,7 +144,9 @@ void Manager::update()
         m_filter.resample();
 
         m_map.update(m_occupancy, m_enableMapGradient);
-        if (m_enableVisualizeTraversability) {
+        if (m_enableVisualizeWavefront) {
+            m_map.update(m_wavefront);
+        } else if (m_enableVisualizeTraversability) {
             m_map.update(m_traversability);
         } else if (m_enableVisualizeElevation) {
             m_map.update(m_elevation);
@@ -255,6 +261,7 @@ void Manager::run()
             ImGui::Checkbox("Visualize obstacles", &m_enableVisualizeObstacles);
             ImGui::Checkbox("Visualize elevation", &m_enableVisualizeElevation);
             ImGui::Checkbox("Visualize traversability", &m_enableVisualizeTraversability);
+            ImGui::Checkbox("Visualize wavefront", &m_enableVisualizeWavefront);
             ImGui::Checkbox("Manual control", &m_useManualNavigation);
             ImGui::Checkbox("Return to home", &m_returnToHome);
         }
@@ -288,6 +295,10 @@ void Manager::updateCamera()
         m_depth.process(capture, m_bestEstimate, m_elevation);
         m_elevation.update(m_depth);
         m_traversability.update(m_elevation);
+        if (m_updatePath) {
+            m_wavefront.findPath(m_traversability, m_start, m_target);
+            // m_updatePath = false;
+        }
     }
 
     scheduleNextCapture();
