@@ -70,7 +70,7 @@ static constexpr uint32_t  kWeightThresholdUpper        = 3;
 // Robot/Sensor Specs
 static constexpr double kLidarMaxRange = 20.0;
 static constexpr double kLidarMinRange = 0.1;
-static constexpr double kMapResolution = 0.05; // 5cm per cell
+static constexpr double kMapResolution = 0.05; // 0.05; // 5cm per cell
 static constexpr double kMapLength     = 15.0; // 10 meters
 static constexpr double kMapHalfLength = kMapLength / 2.0;
 static constexpr int    kMapWidth      = int(kMapLength / kMapResolution);

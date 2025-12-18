@@ -140,7 +140,9 @@ void Manager::update()
         m_filter.resample();
 
         m_map.update(m_occupancy, m_enableMapGradient);
-        if (m_enableVisualizeElevation) {
+        if (m_enableVisualizeTraversability) {
+            m_map.update(m_traversability);
+        } else if (m_enableVisualizeElevation) {
             m_map.update(m_elevation);
         }
         m_map.update(m_filter, m_occupancy.resolution(), m_enableVisualizeFilter);
@@ -251,6 +253,8 @@ void Manager::run()
             ImGui::Checkbox("Visualize cloud", &m_enableVisualizeCloud);
             ImGui::Checkbox("Visualize obstacles", &m_enableVisualizeObstacles);
             ImGui::Checkbox("Visualize elevation", &m_enableVisualizeElevation);
+            ImGui::Checkbox("Visualize traversability", &m_enableVisualizeTraversability);
+            ImGui::Checkbox("Manual control", &m_useManualNavigation);
             ImGui::Checkbox("Return to home", &m_returnToHome);
         }
         ImGui::End();
@@ -282,6 +286,7 @@ void Manager::updateCamera()
     if (not capture.empty()) {
         m_depth.process(capture, m_bestEstimate, m_elevation);
         m_elevation.update(m_depth);
+        m_traversability.update(m_elevation);
     }
 
     scheduleNextCapture();
@@ -289,8 +294,8 @@ void Manager::updateCamera()
 
 void Manager::processKeyboard()
 {
-    const double kManualLinearSpeed  = 0.3; // m/s
-    const double kManualAngularSpeed = 1.2/2; // rad/s
+    const double kManualLinearSpeed  = 0.3;     // m/s
+    const double kManualAngularSpeed = 1.2 / 2; // rad/s
 
     // Check Linear (Forward/Backward)
     if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) {

@@ -20,9 +20,11 @@ Camera::Camera(std::string_view url) : m_url(url), m_capture(m_url) { std::print
 
 auto Camera::capture() -> const cv::Mat&
 {
-    m_capture >> m_buffer;
-    cv::flip(m_buffer, m_buffer, -1);
-    return m_buffer;
+    // m_capture >> m_buffer1;
+    m_capture >> m_buffer2;
+    // cv::threshold(m_buffer1, m_buffer2, 100.0, 0.0, cv::THRESH_TOZERO_INV);
+    cv::flip(m_buffer2, m_buffer2, -1);
+    return m_buffer2;
 }
 
 // Expected camera resolution is 848x480

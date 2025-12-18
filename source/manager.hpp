@@ -16,6 +16,7 @@
 #include "particle.hpp"
 #include "tangent_bug.hpp"
 #include "time.hpp"
+#include "traversability.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
@@ -83,6 +84,8 @@ private:
     bool                      m_enableVisualizeCloud{true};
     bool                      m_enableVisualizeObstacles{true};
     bool                      m_enableVisualizeElevation{true};
+    bool                      m_enableVisualizeTraversability{false};
+    bool                      m_useManualNavigation{true};
     bool                      m_returnToHome{false};
 
     Canvas                         m_canvas;
@@ -106,5 +109,6 @@ private:
     CameraTexture                  m_cameraTexture;
     DepthProcessor                 m_depth;
     ElevationGrid                  m_elevation;
+    TraversabilityGrid             m_traversability;
 };
 } // namespace reanaut

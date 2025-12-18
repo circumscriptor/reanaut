@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <cstddef>
 #include <optional>
 
@@ -39,81 +38,35 @@ void GridBase::gridToWorld(Index index, Point2& world) const
 
 GridBase::GridBase() : m_width(kMapWidth), m_height(kMapHeight), m_resolution(kMapResolution), m_originX(kMapOriginX), m_originY(kMapOriginY) {}
 
-Grid::Grid()
+template <>
+void TGrid<bool>::updateCell(Index index, bool change)
 {
-    m_grid.resize(size_t(width()) * height(), 0.0); // Initialize to 0 (Unknown probability 0.5)
-}
-
-auto Grid::at(Index index) const -> Real
-{
-    assert(index.x >= 0 && index.x < width());
-    assert(index.y >= 0 && index.y < height());
-    return m_grid[(size_t(index.y) * width()) + index.x];
-}
-
-auto Grid::at(Index index) -> Real&
-{
-    assert(index.x >= 0 && index.x < width());
-    assert(index.y >= 0 && index.y < height());
-    return m_grid[(size_t(index.y) * width()) + index.x];
-}
-
-auto Grid::get(Index index) const -> std::optional<Real>
-{
-    if (not inBounds(index)) {
-        return std::nullopt;
+    int idx = (index.y * width()) + index.x;
+    if (idx >= 0 && idx < int(m_grid.size())) {
+        m_grid[idx] = change;
     }
-    return at(index);
 }
 
-void Grid::set(Index index, Real value) { at(index) = value; }
-
-auto Grid::setPoint(Point2 world, Real value) -> bool
-{
-    if (auto index = worldToGrid(world); index) {
-        at(*index) = value;
-        return true;
-    }
-    return false;
-}
-
-auto Grid::getDistance(const Pose& pose, Real maxDistance) const -> Real
-{
-    const Real stepSize = resolution();
-
-    Real currDist = 0.0;
-
-    const Real dx = std::cos(pose.theta);
-    const Real dy = std::sin(pose.theta);
-
-    // Simple stepping raycast (faster than Bresenham for readout)
-    while (currDist < maxDistance) {
-        const Point2 check{
-            .x = pose.x + (dx * currDist),
-            .y = pose.y + (dy * currDist),
-        };
-
-        Index index{};
-        if (not worldToGrid(check, index)) {
-            return maxDistance; // Out of bounds is "open space" or max range
-        }
-
-        // If log odds > 0, it's likely occupied
-        if (m_grid[size_t(index.y * width()) + index.x] > 2.0) { // Threshold 2.0 for "confident obstacle"
-            return currDist;
-        }
-        currDist += stepSize;
-    }
-    return maxDistance;
-}
-
-void Grid::updateCell(Index index, Real change)
+template <>
+void TGrid<RealType>::updateCell(Index index, Real change)
 {
     int idx = (index.y * width()) + index.x;
     if (idx >= 0 && idx < int(m_grid.size())) {
         // Clamp values to prevent overconfidence/underflow
         m_grid[idx] = std::clamp(m_grid[idx] + change, kLogOddsMin, kLogOddsMax);
     }
+}
+
+template <>
+inline auto TGrid<bool>::isObstacle(Index index) const -> bool
+{
+    return m_grid[size_t(index.y * width()) + index.x];
+}
+
+template <>
+inline auto TGrid<RealType>::isObstacle(Index index) const -> bool
+{
+    return m_grid[size_t(index.y * width()) + index.x] > 2.0;
 }
 
 } // namespace reanaut

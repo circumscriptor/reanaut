@@ -217,10 +217,11 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
     return robotSpeed.computeControl();
 }
 
-
-auto TangentBug::decideFollowDirection(const  std::vector<LaserScan>& measurement) -> TangentBug::State {
-      State decision = State::Invalid;
-
+// NOLINTNEXTLINE
+auto TangentBug::decideFollowDirection(const std::vector<LaserScan>& measurement) -> TangentBug::State
+{
+    State decision = State::Invalid;
+    (void)measurement;
     return decision;
 }
 

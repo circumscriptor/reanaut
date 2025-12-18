@@ -7,7 +7,6 @@
 #include <opencv2/core/mat.hpp>
 
 #include <cstddef>
-#include <cstdint>
 #include <unordered_map>
 
 namespace reanaut
@@ -47,8 +46,5 @@ private:
 
     std::unordered_map<size_t, Real> m_observations;
 };
-
-// Converts a value 0.0 (Low) to 1.0 (High) into 0xAABBGGRR (Little Endian for SDL)
-auto getHeatmapColor(RealType value) -> uint32_t;
 
 } // namespace reanaut

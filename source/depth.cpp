@@ -23,51 +23,51 @@ void DepthProcessor::process(const cv::Mat& depthImage, const Pose& pose, const 
     }
 
     const int rows = depthImage.rows;
-    const int cols = depthImage.cols;
+    const int cols = depthImage.cols / 3;
 
     // Precompute Pose Transforms
-    const Real cosTheta = std::cos(pose.theta);
-    const Real sinTheta = std::sin(pose.theta);
+    const Real cosTheta = std::cos(pose.theta * 2.0);
+    const Real sinTheta = std::sin(pose.theta * 2.0);
     const Real robotX   = pose.x;
     const Real robotY   = pose.y;
 
     // Heuristic reserve: assuming we hit ~10-20% unique cells vs pixels
     m_observations.clear();
-    m_observations.reserve(size_t(rows * cols) / 16);
+    m_observations.reserve(size_t(rows * cols) / 10); // NOLINT
 
     for (int v = 0; v < rows; ++v) {
         const auto* rowPtr = depthImage.ptr<uint8_t>(v);
-
-        // Optimization: Step 3 pixels (reduce CPU load)
-        for (int u = 0; u < cols; u += 3) {
-            const uint8_t pixelValue = rowPtr[u];
+        for (int u = 0; u < cols; ++u) {
+            const uint8_t pixelValue = rowPtr[u * 3]; // NOLINT
 
             // 1a. Range Filtering
-            if (pixelValue < 5 || pixelValue > 100) { // NOLINT
+            if (pixelValue < 5 || pixelValue > 150) { // NOLINT
                 continue;
             }
 
             // 1b. Pixel -> Camera Coordinates
-            const Real zCam = static_cast<Real>(pixelValue) / Real(50.0);
-            const Real xCam = (static_cast<Real>(u) - kCu) * zCam / kFu;
-            const Real yCam = (static_cast<Real>(v) - kCv) * zCam / kFv;
+            const Real depth = static_cast<Real>(pixelValue) / Real(50.0);
+            const Real xC    = (static_cast<Real>(u) - kCu) / kFu;
+            const Real yC    = (static_cast<Real>(v) - kCv) / kFv;
 
             // 1c. Camera -> Robot Coordinates
-            const Real pX = zCam + kOffsetX;       // Forward
-            const Real pY = -xCam;                 // Left
-            const Real pZ = -yCam + kCameraHeight; // Up
+            const Real pX = depth + kOffsetX; // Forward
+            const Real pY = -xC * depth;      // Left
+            const Real pZ = -yC * depth;      // Up
 
             // Filter points that are underground (noise)
-            if (pZ < 0) {
-                continue;
-            }
+            // if (pZ < 0) {
+            //     continue;
+            // }
 
             // 1d. Robot -> Global Coordinates (Rotation + Translation)
             const Real xGlobal = robotX + (pX * cosTheta - pY * sinTheta);
             const Real yGlobal = robotY + (pX * sinTheta + pY * cosTheta);
 
+            // const auto xGlobal = pX;
+            // const auto yGlobal = pY;
+
             // 1e. Aggregate
-            // We ask the map for the index, but we don't update the cell yet.
             if (const auto index = grid.worldToGrid(Point2(xGlobal, yGlobal)); index) {
                 const size_t szIndex = index->pack();
 
@@ -81,16 +81,5 @@ void DepthProcessor::process(const cv::Mat& depthImage, const Pose& pose, const 
         }
     }
 }
-
-// NOLINTBEGIN
-auto getHeatmapColor(RealType value) -> uint32_t
-{
-    RealType   t = std::clamp(value, RealType(0), RealType(1));
-    const auto r = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(3)), RealType(0), RealType(1));
-    const auto g = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(2)), RealType(0), RealType(1));
-    const auto b = std::clamp(RealType(1.5) - std::abs((RealType(4) * t) - RealType(1)), RealType(0), RealType(1));
-    return 0xFF000000 | (static_cast<uint32_t>(b * 255) << 16) | (static_cast<uint32_t>(g * 255) << 8) | static_cast<uint32_t>(r * 255);
-}
-// NOLINTEND
 
 } // namespace reanaut

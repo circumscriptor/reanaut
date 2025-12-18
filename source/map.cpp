@@ -1,11 +1,11 @@
 #include "cloud.hpp"
 #include "constants.hpp"
-#include "depth.hpp"
 #include "elevation.hpp"
 #include "lines.hpp"
 #include "map.hpp"
 #include "occupancy.hpp"
 #include "particle.hpp"
+#include "traversability.hpp"
 
 #include <SDL3/SDL_gpu.h>
 #include <imgui.h>
@@ -50,7 +50,17 @@ void Map::update(const ElevationGrid& elevation)
     auto         map  = m_texture.pixels();
     const size_t size = std::min(grid.size(), map.size());
     for (size_t i = 0; i < size; ++i) {
-        map[i] = getHeatmapColor(grid[i]);
+        map[i] = getElevationColor(grid[i]);
+    }
+}
+
+void Map::update(const TraversabilityGrid& traversability)
+{
+    auto         grid = traversability.grid();
+    auto         map  = m_texture.pixels();
+    const size_t size = std::min(grid.size(), map.size());
+    for (size_t i = 0; i < size; ++i) {
+        map[i] = getTraversabilityColor(grid[i]);
     }
 }
 

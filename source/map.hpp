@@ -6,6 +6,7 @@
 #include "occupancy.hpp"
 #include "particle.hpp"
 #include "texture.hpp"
+#include "traversability.hpp"
 
 #include <SDL3/SDL_gpu.h>
 #include <imgui.h>
@@ -27,6 +28,7 @@ public:
 
     void update(const OccupancyGrid& occupancy, bool gradient = false);
     void update(const ElevationGrid& elevation);
+    void update(const TraversabilityGrid& traversability);
     void update(const ParticleFilter& filter, Real resolution, bool enableFilter);
     void update(const PointCloud& cloud);
     void update(const TurboUberSuperDetector& detector, Real resolution, bool enable);

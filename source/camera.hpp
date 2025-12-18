@@ -19,13 +19,14 @@ public:
 
     auto capture() -> const cv::Mat&;
 
-    [[nodiscard]] auto buffer() const -> const cv::Mat& { return m_buffer; }
+    // [[nodiscard]] auto buffer() const -> const cv::Mat& { return m_buffer2; }
 
 private:
 
     std::string      m_url;
     cv::VideoCapture m_capture;
-    cv::Mat          m_buffer;
+    cv::Mat          m_buffer1;
+    cv::Mat          m_buffer2;
 };
 
 class CameraTexture : public TransferTexture
