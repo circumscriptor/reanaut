@@ -178,9 +178,10 @@ void Manager::update()
     // } else {
     //     m_command.baseControl(0, 0);
     // }
+    
 
     if (m_returnToHome) {
-        auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime());
+        auto [speed, radius] = m_tangentBug.process(m_scans, m_bestEstimate, m_time.getDeltaTime(), m_detector.obstacles());
         // std::println("[Manager] tangentbug returned: speed={}, radius={}", speed, radius);
 
         if (m_tangentBug.isDoneDoneDone()) {

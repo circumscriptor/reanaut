@@ -4,10 +4,12 @@
 #include "laser.hpp"
 #include "navigator.hpp"
 #include "particle.hpp"
+#include "polygon.hpp"
 
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -29,7 +31,7 @@ public:
         m_isDoneDoneDone = false;
     };
 
-    auto process(const std::vector<LaserScan>& scans, Particle position, RealType dt) -> std::pair<uint16_t, uint16_t>;
+    auto process(const std::vector<LaserScan>& scans, Particle position, RealType dt, std::span<const Polygon> wallPolygons) -> std::pair<uint16_t, uint16_t>;
 
     [[nodiscard]] auto isDoneDoneDone() const -> bool { return m_isDoneDoneDone; }
 
@@ -63,7 +65,7 @@ private:
     [[nodiscard]] static auto distance(Real x1, Real y1, Real x2, Real y2) noexcept -> Real { return std::sqrt(distanceSq(x1, y1, x2, y2)); }
 
     [[nodiscard]] auto isPathToDestinationClear(const std::vector<LaserScan>& measurement) const -> bool;
-    auto decideFollowDirection(const  std::vector<LaserScan>& measurement) -> State;
+    auto decideFollowDirection(const  std::vector<LaserScan>& measurement, std::span<const Polygon> wallPolygons, Point2 robotPos) -> State;
 
     auto map(auto value, auto inMin, auto inMax, auto outMin, auto outMax) { return ((value - inMin) * (outMax - outMin) / (inMax - inMin)) + outMin; }
 

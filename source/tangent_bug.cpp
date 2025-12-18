@@ -2,6 +2,7 @@
 #include "laser.hpp"
 #include "navigator.hpp"
 #include "particle.hpp"
+#include "polygon.hpp"
 #include "tangent_bug.hpp"
 
 #include <algorithm>
@@ -11,6 +12,7 @@
 #include <numbers>
 #include <optional>
 #include <print>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -26,7 +28,8 @@ namespace reanaut
 
 TangentBug::TangentBug() : m_pointFollower({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}) {};
 
-auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosition, RealType dt) -> std::pair<uint16_t, uint16_t>
+auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosition, RealType dt, std::span<const Polygon> wallPolygons)
+    -> std::pair<uint16_t, uint16_t>
 {
     Velocity robotSpeed;
     robotSpeed.angular = 0;
@@ -76,8 +79,8 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
             }
 
             case State::DecideWallFollow: {
-                // _state      = decideFollowDirection(scans);
-                m_state      = State::FollowWallR;
+                m_state      = decideFollowDirection(scans, wallPolygons, robotPosition);
+                //m_state      = State::FollowWallR;
                 m_wallLocked = false;
                 break;
             }
@@ -217,12 +220,43 @@ auto TangentBug::process(const std::vector<LaserScan>& scans, Particle robotPosi
     return robotSpeed.computeControl();
 }
 
-// NOLINTNEXTLINE
-auto TangentBug::decideFollowDirection(const std::vector<LaserScan>& measurement) -> TangentBug::State
+auto TangentBug::decideFollowDirection(const std::vector<LaserScan>& measurement, std::span<const Polygon> wallPolygons, Point2 robotPos) -> TangentBug::State
 {
-    State decision = State::Invalid;
-    (void)measurement;
-    return decision;
+    // If no obstacles are detected, we cannot decide on a wall-following direction
+    if (wallPolygons.empty()) {
+        return State::Invalid;
+    }
+
+    // Initialize variables to track the best (shortest) path found for both directions
+    RealType minTotalDistL = std::numeric_limits<RealType>::max();
+    RealType minTotalDistR = std::numeric_limits<RealType>::max();
+
+    // Robot's current position from its pose
+    //Point2 robotPos = {m_pose.x, m_pose.y};
+
+    for (const auto& poly : wallPolygons) {
+        // poly.getTangents returns a pair: {minAngleVertex, maxAngleVertex}
+        // Based on the implementation of getTangents:
+        // .first (minAngle) corresponds to the Right edge from the robot's view
+        // .second (maxAngle) corresponds to the Left edge from the robot's view
+        auto [rightEdge, leftEdge] = poly.getTangents(robotPos);
+
+        // Calculate heuristic distance for the Left path: dist(Robot->Edge) + dist(Edge->Goal)
+        RealType distPathL = robotPos.distance(leftEdge) + leftEdge.distance(m_destination);
+        minTotalDistL = std::min(distPathL, minTotalDistL);
+
+        // Calculate heuristic distance for the Right path: dist(Robot->Edge) + dist(Edge->Goal)
+        RealType distPathR = robotPos.distance(rightEdge) + rightEdge.distance(m_destination);
+        minTotalDistR = std::min(distPathR, minTotalDistR);
+    }
+
+    // According to point 2 in the instructions: 
+    // "aim at the obstacle's edge so that the Euclidean distance that the robot has to travel is as small as possible"
+    if (minTotalDistL < minTotalDistR) {
+        return State::FollowWallL;
+    } else {
+        return State::FollowWallR;
+    }
 }
 
 auto TangentBug::angleToTarget(Point2 location) const -> Real
