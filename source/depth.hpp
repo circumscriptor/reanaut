@@ -1,13 +1,14 @@
 #pragma once
 
 #include "constants.hpp"
+#include "grid.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/mat.hpp>
 
+#include <cstddef>
 #include <cstdint>
-#include <span>
-#include <vector>
+#include <unordered_map>
 
 namespace reanaut
 {
@@ -34,16 +35,17 @@ public:
     static constexpr Real kCv = Real(234.030456542969);
 
     // Translation from PDF Page 8: 12cm offset in Robot X
-    static constexpr Real kOffsetX = Real(0.12);
+    static constexpr Real kOffsetX      = Real(0.12); // Forward displacement
+    static constexpr Real kCameraHeight = Real(0.17); // Height from floor (h_cam)
 
-    [[nodiscard]] auto points() const -> std::span<const Point3> { return m_points; }
+    [[nodiscard]] auto observations() const -> const std::unordered_map<size_t, Real>& { return m_observations; }
 
     // Convert raw cv::Mat to Robot-Frame Points
-    void process(const cv::Mat& depthImage);
+    void process(const cv::Mat& depthImage, const Pose& pose, const GridBase& grid);
 
 private:
 
-    std::vector<Point3> m_points;
+    std::unordered_map<size_t, Real> m_observations;
 };
 
 // Converts a value 0.0 (Low) to 1.0 (High) into 0xAABBGGRR (Little Endian for SDL)

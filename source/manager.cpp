@@ -18,14 +18,16 @@
 #include <limits>
 #include <print>
 #include <random>
+#include <thread>
+#include <vector>
 
 namespace reanaut
 {
 
 Manager::Manager(const Options& options)
     : m_ioContext(3), m_signals(m_ioContext, SIGINT, SIGTERM),                                  // Listen for Ctrl+C and termination signals
-      m_timer(boost::asio::make_strand(m_ioContext)),                                           //
-      m_cameraTimer(boost::asio::make_strand(m_ioContext)),                                     //
+      m_timer(m_ioContext),                                                                     //
+      m_cameraTimer(m_ioContext),                                                               //
       m_kobuki(m_ioContext, options.kobukiHostPort, options.robotIp, options.kobukiTargetPort), //
       m_laser(m_ioContext, options.laserHostPort, options.robotIp, options.laserTargetPort),    //
       m_navigator({.kP = kTranslateP, .kI = kTranslateI, .kD = kTranslateD}, {.kP = kRotateP, .kI = kRotateI, .kD = kRotateD}), //
@@ -212,9 +214,13 @@ void Manager::update()
 
 void Manager::run()
 {
-    m_canvas.run([this](SDL_GPUCommandBuffer* commandBuffer) {
-        m_ioContext.poll();
+    std::vector<std::jthread> threads;
+    threads.reserve(3);
+    for (int i = 0; i < 3; ++i) {
+        threads.emplace_back([this]() { m_ioContext.run(); });
+    }
 
+    m_canvas.run([this](SDL_GPUCommandBuffer* commandBuffer) {
         processKeyboard();
 
         if (ImGui::Begin("Pose")) {
@@ -259,7 +265,9 @@ void Manager::run()
         m_map.draw(commandBuffer);
         m_cameraTexture.draw(commandBuffer);
     });
+
     stopMotor();
+    m_ioContext.stop();
 }
 
 void Manager::updateCamera()
@@ -268,8 +276,8 @@ void Manager::updateCamera()
     m_cameraTexture.update(capture);
 
     if (not capture.empty()) {
-        m_depth.process(capture);
-        m_elevation.update(m_depth, m_bestEstimate);
+        m_depth.process(capture, m_bestEstimate, m_elevation);
+        m_elevation.update(m_depth);
     }
 
     scheduleNextCapture();

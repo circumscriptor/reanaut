@@ -125,8 +125,36 @@ struct Index
 {
     using Type = int;
 
+    union Helper {
+        struct
+        {
+            int x;
+            int y;
+        };
+        size_t v;
+    };
+
     Type x{};
     Type y{};
+
+    [[nodiscard]]
+    auto pack() const -> size_t
+    {
+        Helper packer{.x = x, .y = y};
+        return packer.v;
+    }
+
+    [[nodiscard]]
+    static auto unpack(size_t index) -> Index
+    {
+        Helper unpacker{.v = index};
+        return {
+            .x = unpacker.x,
+            .y = unpacker.y,
+        };
+    }
+
+    auto operator==(const Index&) const -> bool = default;
 };
 
 } // namespace reanaut

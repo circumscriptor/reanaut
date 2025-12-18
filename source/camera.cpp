@@ -36,41 +36,14 @@ void CameraTexture::update(const cv::Mat& sourceMat)
         return;
     }
 
-    // If your camera changes resolution dynamically, you would need to add a resize()
-    // method to your base TransferTexture class to recreate resources.
     if (static_cast<uint32_t>(sourceMat.cols) != width() || static_cast<uint32_t>(sourceMat.rows) != height()) {
         std::println(stderr, "Error: Camera frame size ({}x{}) does not match Texture size ({}x{})", sourceMat.cols, sourceMat.rows, width(), height());
         return;
     }
 
-    // SDL Texture is RGBA (4 bytes). We must convert input to this format.
     if (sourceMat.type() == CV_8UC3) {
-        // Standard Webcam (BGR) -> RGBA
         cv::cvtColor(sourceMat, m_staging, cv::COLOR_BGR2RGBA);
-    } else if (sourceMat.type() == CV_8UC4) {
-        // Already BGRA or RGBA (just copy to ensure contiguous data if needed)
-        // Assuming input is BGRA (OpenCV default), convert to RGBA
-        cv::cvtColor(sourceMat, m_staging, cv::COLOR_BGRA2RGBA);
-    } else if (sourceMat.type() == CV_8UC1) {
-        // Grayscale / IR -> RGBA
-        cv::cvtColor(sourceMat, m_staging, cv::COLOR_GRAY2RGBA);
-    } else if (sourceMat.type() == CV_16UC1) {
-        // Depth Camera (16-bit) -> Visualization
-        // We normalize the 16-bit data to 8-bit and apply a colormap for visibility
-
-        cv::Mat adjMap;
-
-        // Normalize: 0 to ~4 meters (4000mm) mapped to 0-255.
-        // Adjust alpha (scale) based on your depth range.
-        sourceMat.convertTo(adjMap, CV_8UC1, 255.0 / 4000.0); // NOLINT
-
-        // Optional: Apply ColorMap (needs headers) or just Grayscale
-        // cv::applyColorMap(adjMap, m_staging, cv::COLORMAP_JET);
-
-        // Simple Grayscale fallback for speed:
-        cv::cvtColor(adjMap, m_staging, cv::COLOR_GRAY2RGBA);
     } else {
-        // Fallback for unknown types (e.g., float)
         std::println(stderr, "Unsupported Mat type for texture upload");
         return;
     }
@@ -79,7 +52,7 @@ void CameraTexture::update(const cv::Mat& sourceMat)
 void CameraTexture::upload(SDL_GPUCommandBuffer* commandBuffer)
 {
     if (m_staging.empty()) {
-        std::println(stderr, "Error: Cannot upload empty texture");
+        // std::println(stderr, "Error: Cannot upload empty texture");
         return;
     }
 

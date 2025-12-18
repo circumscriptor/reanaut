@@ -13,11 +13,12 @@ public:
 
     using Real = RealType;
 
-    void update(const DepthProcessor& depth, const Pose& pose);
+    void update(const DepthProcessor& depth);
 
 protected:
 
     void updateCell(Real pointX, Real pointY, Real pointZ);
+    void updateCellByIndex(Index index, Real measuredZ);
 };
 
 } // namespace reanaut
