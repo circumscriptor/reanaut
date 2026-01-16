@@ -5,6 +5,7 @@
 #include "grid.hpp"
 #include "laser.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -22,6 +23,7 @@ public:
 
     [[nodiscard]] auto isOccupied(Point2 world) const -> bool;
     [[nodiscard]] auto isOccupied(Index index) const -> bool;
+    [[nodiscard]] auto isOccupied(size_t offset) const -> bool;
     [[nodiscard]] auto getProbability(Point2 world) const -> std::optional<Real>;
     [[nodiscard]] auto getProbabilitySmooth(Point2 world) const -> std::optional<Real>;
 

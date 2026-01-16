@@ -7,6 +7,7 @@
 #include <limits>
 #include <numbers>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace reanaut
@@ -103,6 +104,92 @@ auto findShortestMeasurementInRange(const std::vector<LaserScan>& scans, RealTyp
         return LaserScan{};
     }
     return scans.at(index);
+}
+
+void LaserLookup::fromScans(std::span<const LaserScan> scans)
+{
+    // 1. Reset Lookup
+    std::fill(m_lookup.begin(), m_lookup.end(), kInfinity);
+
+    if (scans.empty()) {
+        return;
+    }
+
+    const size_t numScans = scans.size();
+    size_t       nextIdx  = 0;
+
+    // 2. Single Pass Interpolation (O(360 + N))
+    for (int i = 0; i < 360; ++i) { // NOLINT
+
+        auto deg = static_cast<Real>(i);
+
+        // Advance next_idx until scans[next_idx] > deg
+        // This finds the first scan point that is *after* our current degree.
+        while (nextIdx < numScans && static_cast<Real>(scans[nextIdx].angle) <= deg) {
+            nextIdx++;
+        }
+
+        // Identify the two bounding points: Prev and Next
+        Real angPrev;
+        Real distPrev;
+        Real angNext;
+        Real distNext;
+
+        if (nextIdx == 0) {
+            // Wrap-around case: We are before the first scan.
+            // Interval is [LastScan - 360, FirstScan]
+            const auto& sNext = scans[0];
+            const auto& sPrev = scans[numScans - 1];
+
+            angNext  = static_cast<Real>(sNext.angle);
+            distNext = static_cast<Real>(sNext.toMeters());
+
+            angPrev  = static_cast<Real>(sPrev.angle) - 360.0;
+            distPrev = static_cast<Real>(sPrev.toMeters());
+
+        } else if (nextIdx == numScans) {
+            // Wrap-around case: We are after the last scan.
+            // Interval is [LastScan, FirstScan + 360]
+            const auto& sNext = scans[0];
+            const auto& sPrev = scans[numScans - 1];
+
+            angNext  = static_cast<Real>(sNext.angle) + 360.0;
+            distNext = static_cast<Real>(sNext.toMeters());
+
+            angPrev  = static_cast<Real>(sPrev.angle);
+            distPrev = static_cast<Real>(sPrev.toMeters());
+
+        } else {
+            // Standard case: Interval is [scans[i-1], scans[i]]
+            const auto& sNext = scans[nextIdx];
+            const auto& sPrev = scans[nextIdx - 1];
+
+            angNext  = static_cast<Real>(sNext.angle);
+            distNext = static_cast<Real>(sNext.toMeters());
+
+            angPrev  = static_cast<Real>(sPrev.angle);
+            distPrev = static_cast<Real>(sPrev.toMeters());
+        }
+
+        // 3. Interpolate
+        const Real gap = angNext - angPrev;
+
+        // Only fill if the gap is small enough (avoid closing open doorways)
+        if (gap < kMaxInterpGap && gap > 0.001) { // NOLINT
+            const Real lt = (deg - angPrev) / gap;
+            m_lookup[i]   = distPrev + lt * (distNext - distPrev);
+        }
+    }
+}
+
+auto LaserLookup::get(int degree) const -> Real
+{
+    // Handle negative or >360 degrees safely
+    int idx = degree % 360; // NOLINT
+    if (idx < 0) {
+        idx += 360; // NOLINT
+    }
+    return m_lookup[idx];
 }
 
 } // namespace reanaut

@@ -116,6 +116,7 @@ private:
     ElevationGrid                  m_elevation;
     TraversabilityGrid             m_traversability;
     WavefrontPlanner               m_wavefront;
+    LaserLookup                    m_lookup;
 };
 
 } // namespace reanaut

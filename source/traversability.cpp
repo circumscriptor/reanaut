@@ -1,4 +1,5 @@
 #include "constants.hpp"
+#include "depth.hpp"
 #include "elevation.hpp"
 #include "traversability.hpp"
 
@@ -6,122 +7,98 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
-#include <print>
+#include <numbers>
+#include <vector>
 
 namespace reanaut
 {
 
 void TraversabilityGrid::update(const ElevationGrid& elevation)
 {
-    // 1. Safety Checks
+    // Safety check
     if (width() != elevation.width() || height() != elevation.height()) {
-        std::println("SIZE MISMATCH");
+        // resize(elevation.width(), elevation.height());
         return;
     }
 
-    const auto&  elev = elevation.grid();
-    const size_t w    = width();
-    const size_t h    = height();
-    const Real   res  = resolution();
+    const auto& rawElev = elevation.grid();
 
-    // Avoid division by zero
-    const Real maxSlopeVal = (kMaxSlopeAngle > 0.0) ? std::tan(kMaxSlopeAngle) : std::numeric_limits<Real>::epsilon();
-    const Real maxStepVal  = (kMaxStepHeight > 0.0) ? kMaxStepHeight : std::numeric_limits<Real>::epsilon();
+    // 1. PRE-PROCESSING: Smooth the elevation map
+    std::vector<Real> smoothElev;
+    smoothElev.resize(rawElev.size());
+    std::copy(rawElev.begin(), rawElev.end(), smoothElev.begin()); // Copy
 
-    // Helper: Checks if a specific elevation value is valid (observed data)
-    auto isValid = [](Real z) {
-        return std::isfinite(z) && z > -1000.0; // Adjust sentinel threshold as needed
-    };
+    for (int y = 1; y < height() - 1; ++y) {
+        for (int x = 1; x < width() - 1; ++x) {
+            auto i = (y * width()) + x;
+            // Simple 5-point Plus Kernel Average
+            // (Center + Up + Down + Left + Right) / 5
+            Real sum      = rawElev[i] + rawElev[i - 1] + rawElev[i + 1] + rawElev[i - width()] + rawElev[i + width()];
+            smoothElev[i] = (sum * 0.2); // - DepthProcessor::kCameraHeight; // - 0.18;
+        }
+    }
 
-    // 2. Clear / Reset Grid (Safe default: Unknown/Obstacle)
-    // Using 0.0 (Free) or 1.0 (Obstacle) depends on your planner.
-    // Usually, borders should be walls (1.0).
-    std::fill(grid().begin(), grid().end(), Real(1.0));
+    const Real kSafeStepHeight = 0.05;
+    const Real kCritStepHeight = 0.20;
+    const Real kSafeAngleRad   = 20.0 * (std::numbers::pi / 180.0);
+    const Real kCritAngleRad   = 45.0 * (std::numbers::pi / 180.0);
+    const Real kSafeSlope      = std::tan(kSafeAngleRad);
+    const Real kCritSlope      = std::tan(kCritAngleRad);
 
-    // 3. Iterate Inner Grid
-    // We maintain 'idx' manually to avoid (y * w + x) multiplication every iter.
-    for (size_t y = 1; y < h - 1; ++y) {
+    for (int y = 2; y < height() - 2; ++y) {
+        for (int x = 2; x < width() - 2; ++x) {
 
-        size_t idx = (y * w) + 1; // Start at x=1
+            const size_t idx     = (size_t(y) * width()) + x;
+            const Real   zCenter = smoothElev[idx];
 
-        for (size_t x = 1; x < w - 1; ++x, ++idx) {
+            // Check immediate neighbors (1 cell away) for sharp steps
+            Real maxStep = 0.0;
+            maxStep      = std::max(maxStep, std::abs(zCenter - smoothElev[idx - 1]));
+            maxStep      = std::max(maxStep, std::abs(zCenter - smoothElev[idx + 1]));
+            maxStep      = std::max(maxStep, std::abs(zCenter - smoothElev[idx - width()]));
+            maxStep      = std::max(maxStep, std::abs(zCenter - smoothElev[idx + width()]));
 
-            const Real zCenter = elev[idx];
-
-            // If the ground itself is a hole, it's non-traversable.
-            if (!isValid(zCenter)) {
-                setAtOffset(idx, Real(1.0));
-                continue;
+            Real stepCost = 0.0;
+            if (maxStep <= kSafeStepHeight) {
+                stepCost = 0.0;
+            } else if (maxStep >= kCritStepHeight) {
+                stepCost = 1.0;
+            } else {
+                stepCost = (maxStep - kSafeStepHeight) / (kCritStepHeight - kSafeStepHeight);
             }
 
-            // Neighbor indices
-            const size_t idxUp    = idx - w;
-            const size_t idxDown  = idx + w;
-            const size_t idxLeft  = idx - 1;
-            const size_t idxRight = idx + 1;
+            // Use STRIDE=2 (check 2 cells away).
+            // This reduces noise by measuring slope over a wider base (e.g. 10cm vs 5cm).
+            const size_t stride = 2;
+            const Real   zL     = smoothElev[idx - stride];
+            const Real   zR     = smoothElev[idx + stride];
+            const Real   zU     = smoothElev[(size_t(y - stride) * width()) + x];
+            const Real   zD     = smoothElev[(size_t(y + stride) * width()) + x];
 
-            const Real zUp    = elev[idxUp];
-            const Real zDown  = elev[idxDown];
-            const Real zLeft  = elev[idxLeft];
-            const Real zRight = elev[idxRight];
+            // Run = 2 * stride * resolution
+            const Real dist = (2.0 * static_cast<Real>(stride)) * resolution();
+            const Real dzdx = (zR - zL) / dist;
+            const Real dzdy = (zD - zU) / dist;
 
-            // --- Metric 1: Step Height (Roughness) ---
-            // We only check step height against VALID neighbors.
-            // If a neighbor is void, we assume a high cost (edge of world) or ignore it.
-            // Here we treat voids as "walls" to be safe.
-            Real maxStepDiff = 0.0;
+            // Gradient Magnitude (Tangent of angle)
+            const Real currentSlope = std::hypot(dzdx, dzdy);
 
-            auto checkStep = [&](Real zNeighbor) {
-                if (isValid(zNeighbor)) {
-                    maxStepDiff = std::max(maxStepDiff, std::abs(zCenter - zNeighbor));
-                } else {
-                    // Option A: Treat void as infinite wall
-                    // maxStepDiff = std::max(maxStepDiff, kMaxStepHeight * 2);
+            Real slopeCost = 0.0;
+            if (currentSlope <= kSafeSlope) {
+                slopeCost = 0.0;
+            } else if (currentSlope >= kCritSlope) {
+                slopeCost = 1.0;
+            } else {
+                slopeCost = (currentSlope - kSafeSlope) / (kCritSlope - kSafeSlope);
+            }
 
-                    // Option B: Ignore void (risk of driving off cliff)
-                    // Option C: Treat as cliff (Cost 1.0) handled via logic below
-                }
-            };
+            // --- AGGREGATE ---
+            Real totalCost = std::max(stepCost, slopeCost);
 
-            checkStep(zUp);
-            checkStep(zDown);
-            checkStep(zLeft);
-            checkStep(zRight);
+            // Hard clamp for safety
+            totalCost = std::clamp(totalCost, 0.0, 1.0);
 
-            Real stepCost = std::clamp(maxStepDiff / maxStepVal, Real(0.0), Real(1.0));
-
-            // --- Metric 2: Slope (Gradient) ---
-            // Robust Finite Difference: Handle missing data by falling back
-            // from Central Difference (2*res) to Forward/Backward (1*res).
-
-            auto getGradient = [&](Real zPrev, Real zNext) -> Real {
-                bool hasPrev = isValid(zPrev);
-                bool hasNext = isValid(zNext);
-
-                if (hasPrev && hasNext) {
-                    // Central Difference
-                    return (zNext - zPrev) / (Real(2.0) * res);
-                } else if (hasNext) {
-                    // Forward Difference
-                    return (zNext - zCenter) / res;
-                } else if (hasPrev) {
-                    // Backward Difference
-                    return (zCenter - zPrev) / res;
-                } else {
-                    // Isolated point (Peak/Valley)
-                    return Real(0.0);
-                }
-            };
-
-            const Real dzdx = getGradient(zLeft, zRight);
-            const Real dzdy = getGradient(zUp, zDown);
-
-            const Real slopeMag  = std::hypot(dzdx, dzdy);
-            const Real slopeCost = std::clamp(slopeMag / maxSlopeVal, Real(0.0), Real(1.0));
-
-            // --- Combination ---
-            setAtOffset(idx, std::max(stepCost, slopeCost));
+            setAtOffset(idx, totalCost);
         }
     }
 }

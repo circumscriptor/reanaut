@@ -91,7 +91,7 @@ auto WavefrontPlanner::propagateWave(Index startIdx, Index goalIdx) -> bool
         }
 
         for (size_t i = 0; i < kDx.size(); ++i) {
-            Index next{current.x + kDx[i], current.y + kDy[i]};
+            Index next(current.x + kDx[i], current.y + kDy[i]);
             if (auto neighborVal = get(next); neighborVal && *neighborVal == 0) {
                 set(next, currentValue + 1);
                 m_queue.push_back(next);

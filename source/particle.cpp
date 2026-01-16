@@ -157,7 +157,7 @@ void ParticleFilter::resample()
         particle.weight = 1.0; // Reset weight
     }
 
-    // Swap buffer with main particle vector (avoids reallocation)
+    // Swap buffer with main particle vector (avoim_resampleBufferds reallocation)
     std::swap(m_particles, m_resampleBuffer);
 }
 

@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <optional>
@@ -29,6 +30,8 @@ auto OccupancyGrid::isOccupied(Point2 world) const -> bool
 }
 
 auto OccupancyGrid::isOccupied(Index index) const -> bool { return logOddsNormalize(at(index)) > 0.5; }
+
+auto OccupancyGrid::isOccupied(size_t offset) const -> bool { return logOddsNormalize(grid()[offset]) > 0.5; }
 
 auto OccupancyGrid::getProbability(Point2 world) const -> std::optional<Real>
 {

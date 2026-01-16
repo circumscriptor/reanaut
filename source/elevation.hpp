@@ -3,6 +3,7 @@
 #include "constants.hpp"
 #include "depth.hpp"
 #include "grid.hpp"
+#include "occupancy.hpp"
 
 #include <cstdint>
 
@@ -16,6 +17,8 @@ public:
     using Real = RealType;
 
     void update(const DepthProcessor& depth);
+
+    void clean(const OccupancyGrid& occupancy);
 
 protected:
 

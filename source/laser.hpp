@@ -2,11 +2,14 @@
 
 #include "constants.hpp"
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace reanaut
@@ -72,5 +75,24 @@ struct LaserScan
 [[nodiscard]] auto findShortestMeasurement(const std::vector<LaserScan>& scans) -> LaserScan;
 
 [[nodiscard]] auto findShortestMeasurementInRange(const std::vector<LaserScan>& scans, RealType startDeg, RealType endDeg) -> LaserScan;
+
+class LaserLookup
+{
+public:
+
+    using Real = RealType;
+
+    static constexpr Real kInfinity     = std::numeric_limits<Real>::infinity();
+    static constexpr Real kMaxInterpGap = 5.0; // Max degrees to bridge
+
+    void fromScans(std::span<const LaserScan> scans);
+
+    [[nodiscard]] auto get(int degree) const -> Real;
+
+private:
+
+    // NOLINTNEXTLINE(readability-magic-numbers)
+    std::array<Real, 360> m_lookup;
+};
 
 } // namespace reanaut

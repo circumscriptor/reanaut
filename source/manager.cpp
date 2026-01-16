@@ -135,6 +135,7 @@ void Manager::update()
 
     if (m_laser.getLatestSweep(m_scans)) {
         m_cloud.fromScans(m_bestEstimate, m_scans);
+        m_lookup.fromScans(m_scans);
 
         m_occupancy.updateFromCloud(m_bestEstimate, m_cloud);
         m_image.update(m_occupancy);
@@ -293,8 +294,9 @@ void Manager::updateCamera()
     m_cameraTexture.update(capture);
 
     if (not capture.empty()) {
-        m_depth.process(capture, m_bestEstimate, m_elevation);
+        m_depth.process(capture, m_bestEstimate, m_elevation, m_lookup);
         m_elevation.update(m_depth);
+        m_elevation.clean(m_occupancy);
         m_traversability.update(m_elevation);
         if (m_updatePath) {
             m_wavefront.update(m_traversability, m_start, m_target);

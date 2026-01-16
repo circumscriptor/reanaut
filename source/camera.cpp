@@ -28,6 +28,10 @@ auto Camera::capture() -> const cv::Mat&
     }
     cv::flip(m_buffer2, m_buffer2, -1);
     cv::cvtColor(m_buffer2, m_buffer1, cv::COLOR_BGR2GRAY);
+
+    // somewhat works
+    m_buffer1(cv::Range(0, m_buffer1.rows / 3), cv::Range::all()) = cv::Scalar(0);
+
     // cv::threshold(m_buffer1, m_buffer2, 100.0, 0.0, cv::THRESH_TOZERO_INV);
 
     // cv::medianBlur(m_buffer1, m_buffer2, 5);
@@ -35,8 +39,8 @@ auto Camera::capture() -> const cv::Mat&
     // cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
     // cv::morphologyEx(m_buffer1, m_buffer2, cv::MORPH_OPEN, kernel);
     // cv::bilateralFilter(m_buffer1, m_buffer2, 9, 75, 75);
-    cv::GaussianBlur(m_buffer1, m_buffer2, cv::Size(7, 7), 1.5);
-    return m_buffer2;
+    // cv::GaussianBlur(m_buffer1, m_buffer2, cv::Size(7, 7), 1.5);
+    return m_buffer1;
 }
 
 // Expected camera resolution is 848x480

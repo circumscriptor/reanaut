@@ -2,6 +2,7 @@
 
 #include "constants.hpp"
 #include "grid.hpp"
+#include "laser.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/mat.hpp>
@@ -40,7 +41,7 @@ public:
     [[nodiscard]] auto observations() const -> const std::unordered_map<size_t, Real>& { return m_observations; }
 
     // Convert raw cv::Mat to Robot-Frame Points
-    void process(const cv::Mat& depthImage, const Pose& pose, const GridBase& grid);
+    void process(const cv::Mat& depthImage, const Pose& pose, const GridBase& grid, const LaserLookup& lookup);
 
 private:
 
